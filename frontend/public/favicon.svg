@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="ember" cx="50%" cy="48%" r="58%">
+      <stop offset="0%" stop-color="#c81818"/>
+      <stop offset="45%" stop-color="#7a0f0f"/>
+      <stop offset="100%" stop-color="#1a0303"/>
+    </radialGradient>
+    <radialGradient id="eyeGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff7a2a" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#ff7a2a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="eye" cx="50%" cy="45%" r="60%">
+      <stop offset="0%" stop-color="#ffe6b0"/>
+      <stop offset="30%" stop-color="#ff6a1e"/>
+      <stop offset="70%" stop-color="#e11515"/>
+      <stop offset="100%" stop-color="#6e0505"/>
+    </radialGradient>
+    <linearGradient id="horn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2a1615"/>
+      <stop offset="100%" stop-color="#0c0605"/>
+    </linearGradient>
+  </defs>
+
+  <!-- фон и внутреннее свечение -->
+  <circle cx="256" cy="256" r="256" fill="#000000"/>
+  <circle cx="256" cy="256" r="176" fill="url(#ember)"/>
+
+  <!-- красное кольцо со свечением -->
+  <circle cx="256" cy="256" r="236" fill="none" stroke="#ff2a2a" stroke-width="26" opacity="0.30"/>
+  <circle cx="256" cy="256" r="236" fill="none" stroke="#e01717" stroke-width="12"/>
+
+  <!-- голова (тёмный силуэт) -->
+  <path d="M256,178 C316,178 356,222 356,288 C356,350 316,398 256,398
+           C196,398 156,350 156,288 C156,222 196,178 256,178 Z"
+        fill="#160d0e"/>
+
+  <!-- рога -->
+  <g fill="url(#horn)" stroke="#6e1010" stroke-width="4">
+    <path d="M186,190 C120,158 88,102 96,40 C158,80 214,116 250,158 Z"/>
+    <path d="M326,190 C392,158 424,102 416,40 C354,80 298,116 262,158 Z"/>
+  </g>
+
+  <!-- ореолы свечения под глазами -->
+  <circle cx="212" cy="266" r="52" fill="url(#eyeGlow)"/>
+  <circle cx="300" cy="266" r="52" fill="url(#eyeGlow)"/>
+
+  <!-- горящие глаза -->
+  <g stroke="#5a0808" stroke-width="3">
+    <path d="M182,236 L252,262 L214,300 Z" fill="url(#eye)"/>
+    <path d="M330,236 L260,262 L298,300 Z" fill="url(#eye)"/>
+  </g>
+
+  <!-- хмурый нос -->
+  <path d="M256,280 L240,338 L256,326 L272,338 Z" fill="#0a0404"/>
+</svg>
