@@ -79,7 +79,10 @@ if _database_url:
             "PORT": str(_u.port or ""),
         }
     }
-else:
+elif os.environ.get("POSTGRES_HOST") or DEBUG:
+    # Локальная разработка / docker-compose: подключение из отдельных POSTGRES_*.
+    # localhost-дефолт допустим ТОЛЬКО в DEBUG, чтобы в проде не было тихого
+    # обращения к самому контейнеру.
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
@@ -90,6 +93,17 @@ else:
             "PORT": os.environ.get("POSTGRES_PORT", "5432"),
         }
     }
+else:
+    # Прод без настроенной БД — падаем сразу с понятным сообщением,
+    # а не молчаливым подключением к localhost внутри контейнера.
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured(
+        "База данных не настроена. Задайте DATABASE_URL "
+        "(на RelaxDev — создайте PostgreSQL во вкладке «База данных», "
+        "переменная появится автоматически) либо переменные POSTGRES_HOST/"
+        "POSTGRES_DB/POSTGRES_USER/POSTGRES_PASSWORD."
+    )
 
 AUTH_PASSWORD_VALIDATORS = []
 
