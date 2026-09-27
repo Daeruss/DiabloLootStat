@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diablo 4 — Счётчик дропа боссов</title>
+<style>
+  :root {
+    --bg: #14100c;
+    --panel: #1f1912;
+    --panel-2: #2a2118;
+    --border: #43331f;
+    --gold: #c8aa6e;
+    --gold-bright: #f0d9a8;
+    --red: #a12c22;
+    --red-bright: #d43b2e;
+    --text: #e8ddc8;
+    --muted: #9a8a70;
+    --myth: #d97f2b;
+    --mythtal: #d94fb0;
+    --splinter: #7fa8d9;
+    --baal: #6f9fd0;
+    --meph: #b57fd9;
+    --diablo: #d9634f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: radial-gradient(circle at top, #241b12, var(--bg));
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+  }
+  h1 {
+    text-align: center;
+    color: var(--gold-bright);
+    font-size: 26px;
+    letter-spacing: 1px;
+    margin: 0 0 4px;
+    text-shadow: 0 2px 8px #000;
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    margin: 0 0 24px;
+    font-size: 13px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+
+  .boss-select {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  select, input, button {
+    font-family: inherit;
+    font-size: 14px;
+  }
+  select {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    min-width: 200px;
+  }
+  .new-boss { display: flex; gap: 6px; }
+  .new-boss input {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    width: 150px;
+  }
+  .btn {
+    background: linear-gradient(#3a2c1a, #2a2016);
+    color: var(--gold);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: .15s;
+  }
+  .btn:hover { border-color: var(--gold); color: var(--gold-bright); }
+  .btn-del {
+    background: transparent;
+    color: var(--muted);
+    border-color: transparent;
+  }
+  .btn-del:hover { color: var(--red-bright); }
+
+  .torment-tabs {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .torment-tab {
+    background: var(--panel-2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: .15s;
+  }
+  .torment-tab:hover { color: var(--text); border-color: var(--gold); }
+  .torment-tab.active {
+    background: linear-gradient(var(--red), #6e1c15);
+    color: #fff;
+    border-color: var(--red-bright);
+    font-weight: 600;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .stat .num { font-size: 34px; font-weight: 700; line-height: 1; }
+  .stat .lbl { color: var(--muted); font-size: 12px; margin-top: 8px; text-transform: uppercase; letter-spacing: .5px; }
+  .stat.runs .num { color: var(--gold-bright); }
+  .stat.myth .num { color: var(--myth); }
+  .stat.mythtal .num { color: var(--mythtal); }
+  .stat.rate .num { color: #6fae6f; }
+  .stat.splinter .num { color: var(--splinter); }
+
+  .counters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .counter-card {
+    flex: 1 1 160px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+  }
+  .counter-card h3 { margin: 0 0 14px; color: var(--gold); font-size: 15px; }
+  .ctrl { display: flex; align-items: center; justify-content: center; gap: 12px; }
+  .big-btn {
+    width: 54px; height: 54px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    font-size: 26px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: .15s;
+    line-height: 1;
+  }
+  .big-btn.plus {
+    background: linear-gradient(var(--red), #6e1c15);
+    color: #fff;
+  }
+  .big-btn.plus:hover { background: linear-gradient(var(--red-bright), var(--red)); }
+  .big-btn.minus {
+    background: var(--panel-2);
+    color: var(--muted);
+  }
+  .big-btn.minus:hover { color: var(--text); border-color: var(--gold); }
+  .ctrl .val { font-size: 40px; font-weight: 700; min-width: 60px; color: var(--gold-bright); }
+  .counter-card.myth .ctrl .val { color: var(--myth); }
+  .counter-card.mythtal .ctrl .val { color: var(--mythtal); }
+  .hint { color: var(--muted); font-size: 11px; margin-top: 10px; }
+
+  .section-title {
+    color: var(--gold);
+    font-size: 14px;
+    text-align: center;
+    letter-spacing: .5px;
+    margin: 4px 0 12px;
+  }
+  .section-title span { color: var(--muted); font-size: 12px; }
+  .splinters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .splinters .counter-card h3 { font-size: 14px; margin-bottom: 10px; }
+  .splinters .big-btn { width: 42px; height: 42px; font-size: 22px; }
+  .splinters .ctrl .val { font-size: 32px; min-width: 44px; }
+  .counter-card.baal .ctrl .val { color: var(--baal); }
+  .counter-card.meph .ctrl .val { color: var(--meph); }
+  .counter-card.diablo .ctrl .val { color: var(--diablo); }
+
+  .footer-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    margin-top: 8px;
+  }
+  .footer-actions .btn-del { font-size: 13px; }
+  .muted-note { color: var(--muted); font-size: 12px; }
+
+  .data-bar { margin-top: 18px; text-align: center; }
+  .data-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .autosave {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 12px;
+    cursor: pointer;
+  }
+  .data-note {
+    color: var(--muted);
+    font-size: 11px;
+    max-width: 520px;
+    margin: 10px auto 0;
+    line-height: 1.5;
+  }
+  .data-note b { color: var(--gold); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⚔️ Diablo 4 — Счётчик дропа боссов</h1>
+  <p class="subtitle">Локальный трекер забегов, мификов и осколков — отдельно по каждому уровню Torment. Данные хранятся в этом браузере.</p>
+
+  <div class="boss-select">
+    <select id="bossSelect"></select>
+    <button class="btn btn-del" id="deleteBoss" title="Удалить выбранного босса">✕ удалить</button>
+    <div class="new-boss">
+      <input type="text" id="newBossName" placeholder="Новый босс…" maxlength="30">
+      <button class="btn" id="addBoss">+ добавить</button>
+    </div>
+  </div>
+
+  <div class="torment-tabs" id="tormentTabs"></div>
+
+  <div class="stats">
+    <div class="stat runs"><div class="num" id="statRuns">0</div><div class="lbl">Забегов</div></div>
+    <div class="stat myth"><div class="num" id="statMyth">0</div><div class="lbl">Мификов выпало</div></div>
+    <div class="stat mythtal"><div class="num" id="statMythTal">0</div><div class="lbl">Талисманов выпало</div></div>
+    <div class="stat splinter"><div class="num" id="statSplinter">0</div><div class="lbl">Осколков всего</div></div>
+    <div class="stat rate"><div class="num" id="statRate">—</div><div class="lbl">Шанс мифика за забег</div></div>
+    <div class="stat rate"><div class="num" id="statRateTal">—</div><div class="lbl">Шанс талисмана за забег</div></div>
+  </div>
+
+  <div class="counters">
+    <div class="counter-card">
+      <h3>Забеги на босса</h3>
+      <div class="ctrl">
+        <button class="big-btn minus" data-type="runs" data-delta="-1">−</button>
+        <span class="val" id="valRuns">0</span>
+        <button class="big-btn plus" data-type="runs" data-delta="1">+</button>
+      </div>
+      <div class="hint">Нажимай «+» после каждого убийства</div>
+    </div>
+    <div class="counter-card myth">
+      <h3>Выпало мификов</h3>
+      <div class="ctrl">
+        <button class="big-btn minus" data-type="myth" data-delta="-1">−</button>
+        <span class="val" id="valMyth">0</span>
+        <button class="big-btn plus" data-type="myth" data-delta="1">+</button>
+      </div>
+      <div class="hint">Мифическое (Uber Unique) обмундирование</div>
+    </div>
+    <div class="counter-card mythtal">
+      <h3>Мифические талисманы</h3>
+      <div class="ctrl">
+        <button class="big-btn minus" data-type="mythTal" data-delta="-1">−</button>
+        <span class="val" id="valMythTal">0</span>
+        <button class="big-btn plus" data-type="mythTal" data-delta="1">+</button>
+      </div>
+      <div class="hint">Мифические талисманы</div>
+    </div>
+  </div>
+
+  <div class="section-title">Осколки (Splinters) <span>— падают с боссов</span></div>
+  <div class="splinters">
+    <div class="counter-card baal">
+      <h3>Осколки Баала</h3>
+      <div class="ctrl">
+        <button class="big-btn minus" data-type="splBaal" data-delta="-1">−</button>
+        <span class="val" id="valBaal">0</span>
+        <button class="big-btn plus" data-type="splBaal" data-delta="1">+</button>
+      </div>
+    </div>
+    <div class="counter-card meph">
+      <h3>Осколки Мефисто</h3>
+      <div class="ctrl">
+        <button class="big-btn minus" data-type="splMeph" data-delta="-1">−</button>
+        <span class="val" id="valMeph">0</span>
+        <button class="big-btn plus" data-type="splMeph" data-delta="1">+</button>
+      </div>
+    </div>
+    <div class="counter-card diablo">
+      <h3>Осколки Диабло</h3>
+      <div class="ctrl">
+        <button class="big-btn minus" data-type="splDiablo" data-delta="-1">−</button>
+        <span class="val" id="valDiablo">0</span>
+        <button class="big-btn plus" data-type="splDiablo" data-delta="1">+</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-actions">
+    <span class="muted-note" id="rateDetail"></span>
+    <button class="btn btn-del" id="resetBoss">Сбросить счётчики (этот босс + Torment)</button>
+  </div>
+
+  <div class="data-bar">
+    <div class="data-buttons">
+      <button class="btn" id="exportBtn">💾 Экспорт в файл</button>
+      <button class="btn" id="importBtn">📁 Импорт из файла</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+    <label class="autosave">
+      <input type="checkbox" id="autoBackup"> авто-экспорт в файл раз в 5 минут
+    </label>
+    <p class="data-note">
+      Данные хранятся в браузере и <b>стираются при чистке данных сайтов</b>.
+      Делай «Экспорт», чтобы сохранить копию в файл — её можно вернуть через «Импорт».
+    </p>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = "d4_boss_tracker_v1";
+const DEFAULT_BOSSES = ["Дурьель", "Андариэль", "Варшан", "Григоль", "Зир", "Белиал", "Мефисто", "Баал", "Диабло"];
+
+const NUM_FIELDS = ["runs", "myth", "mythTal", "splBaal", "splMeph", "splDiablo"];
+// уровни сложности Torment I–XII (ключ → подпись)
+const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+const TORMENTS = ROMAN.map((r, i) => [String(i + 1), "T" + r]);
+const TORMENT_KEYS = TORMENTS.map(t => t[0]);
+const DEFAULT_TORMENT = "12";
+
+let state = load();
+
+function newStat() { return { runs: 0, myth: 0, mythTal: 0, splBaal: 0, splMeph: 0, splDiablo: 0 }; }
+
+function newBoss() {
+  const t = {};
+  TORMENT_KEYS.forEach(k => t[k] = newStat());
+  return { t };
+}
+
+// приводим одну запись статистики к полному набору числовых полей
+function normStat(s) {
+  if (!s || typeof s !== "object") s = {};
+  NUM_FIELDS.forEach(f => { if (typeof s[f] !== "number") s[f] = 0; });
+  return s;
+}
+
+// приводим босса к структуре { t: {1..4: stat} }, перенося старые «плоские» данные в Torment IV
+function normBoss(b) {
+  if (!b || typeof b !== "object") return newBoss();
+  if (!b.t || typeof b.t !== "object") {
+    // старый формат: числовые поля лежали прямо в боссе
+    const legacy = normStat({ runs: b.runs, myth: b.myth, splBaal: b.splBaal, splMeph: b.splMeph, splDiablo: b.splDiablo });
+    b = { t: {} };
+    TORMENT_KEYS.forEach(k => b.t[k] = k === DEFAULT_TORMENT ? legacy : newStat());
+  } else {
+    TORMENT_KEYS.forEach(k => b.t[k] = normStat(b.t[k]));
+  }
+  return b;
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const st = JSON.parse(raw);
+      Object.keys(st.bosses).forEach(name => { st.bosses[name] = normBoss(st.bosses[name]); });
+      if (!TORMENT_KEYS.includes(st.torment)) st.torment = DEFAULT_TORMENT;
+      return st;
+    }
+  } catch (e) {}
+  const bosses = {};
+  DEFAULT_BOSSES.forEach(b => bosses[b] = newBoss());
+  return { bosses, current: DEFAULT_BOSSES[0], torment: DEFAULT_TORMENT };
+}
+
+// текущая статистика (выбранный босс + выбранный Torment)
+function curStat() {
+  const boss = state.bosses[state.current];
+  if (!boss) return newStat();
+  return boss.t[state.torment];
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  dirtySinceBackup = true;
+}
+
+const $ = id => document.getElementById(id);
+
+function renderSelect() {
+  const sel = $("bossSelect");
+  sel.innerHTML = "";
+  Object.keys(state.bosses).forEach(name => {
+    const opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    if (name === state.current) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function renderTormentTabs() {
+  const box = $("tormentTabs");
+  box.innerHTML = "";
+  TORMENTS.forEach(([key, label]) => {
+    const btn = document.createElement("button");
+    btn.className = "torment-tab" + (key === state.torment ? " active" : "");
+    btn.textContent = label;
+    btn.addEventListener("click", () => {
+      state.torment = key;
+      renderTormentTabs();
+      render();
+    });
+    box.appendChild(btn);
+  });
+}
+
+function render() {
+  const s = curStat();
+  const totalSpl = s.splBaal + s.splMeph + s.splDiablo;
+  $("valRuns").textContent = s.runs;
+  $("valMyth").textContent = s.myth;
+  $("valMythTal").textContent = s.mythTal;
+  $("valBaal").textContent = s.splBaal;
+  $("valMeph").textContent = s.splMeph;
+  $("valDiablo").textContent = s.splDiablo;
+  $("statRuns").textContent = s.runs;
+  $("statMyth").textContent = s.myth;
+  $("statMythTal").textContent = s.mythTal;
+  $("statSplinter").textContent = totalSpl;
+
+  if (s.runs > 0) {
+    $("statRate").textContent = ((s.myth / s.runs) * 100).toFixed(1) + "%";
+    $("statRateTal").textContent = ((s.mythTal / s.runs) * 100).toFixed(1) + "%";
+    const splNote = `, ${(totalSpl / s.runs).toFixed(2)} осколк(ов) за забег`;
+    if (s.myth > 0) {
+      const oneIn = (s.runs / s.myth).toFixed(1);
+      $("rateDetail").textContent = `≈ 1 мифик каждые ${oneIn} забег(ов)${splNote}`;
+    } else {
+      $("rateDetail").textContent = `Мификов пока не было${splNote}`;
+    }
+  } else {
+    $("statRate").textContent = "—";
+    $("statRateTal").textContent = "—";
+    $("rateDetail").textContent = "";
+  }
+  save();
+}
+
+// Изменение счётчиков
+document.querySelectorAll(".big-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const s = curStat();
+    const type = btn.dataset.type;
+    const delta = parseInt(btn.dataset.delta, 10);
+    s[type] = Math.max(0, s[type] + delta);
+    render();
+  });
+});
+
+// Смена босса
+$("bossSelect").addEventListener("change", e => {
+  state.current = e.target.value;
+  render();
+  save();
+});
+
+// Добавить босса
+function addBoss() {
+  const input = $("newBossName");
+  const name = input.value.trim();
+  if (!name) return;
+  if (state.bosses[name]) { alert("Такой босс уже есть"); return; }
+  state.bosses[name] = newBoss();
+  state.current = name;
+  input.value = "";
+  renderSelect();
+  render();
+  save();
+}
+$("addBoss").addEventListener("click", addBoss);
+$("newBossName").addEventListener("keydown", e => { if (e.key === "Enter") addBoss(); });
+
+// Удалить босса
+$("deleteBoss").addEventListener("click", () => {
+  const names = Object.keys(state.bosses);
+  if (names.length <= 1) { alert("Нельзя удалить последнего босса"); return; }
+  if (!confirm(`Удалить босса «${state.current}» вместе со статистикой?`)) return;
+  delete state.bosses[state.current];
+  state.current = Object.keys(state.bosses)[0];
+  renderSelect();
+  render();
+  save();
+});
+
+// Сброс счётчиков
+$("resetBoss").addEventListener("click", () => {
+  const label = TORMENTS.find(t => t[0] === state.torment)[1];
+  if (!confirm(`Сбросить счётчики для «${state.current}» на ${label}?`)) return;
+  state.bosses[state.current].t[state.torment] = newStat();
+  render();
+  save();
+});
+
+// ── Экспорт / импорт / авто-бэкап ──
+const AUTO_KEY = "d4_boss_tracker_autobackup";
+const BACKUP_INTERVAL_MIN = 5; // как часто скачивать авто-бэкап (в минутах)
+let autoBackup = localStorage.getItem(AUTO_KEY) === "1";
+let backupTimer = null;
+let dirtySinceBackup = false;
+
+function download(filename, text) {
+  const blob = new Blob([text], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportData() {
+  const stamp = new Date().toISOString().slice(0, 16).replace("T", "_").replace(":", "-");
+  download(`d4_boss_stats_${stamp}.json`, JSON.stringify(state, null, 2));
+  dirtySinceBackup = false;
+}
+
+// авто-экспорт по таймеру: раз в BACKUP_INTERVAL_MIN минут, только если были изменения
+function startAutoBackup() {
+  stopAutoBackup();
+  backupTimer = setInterval(() => {
+    if (dirtySinceBackup) exportData();
+  }, BACKUP_INTERVAL_MIN * 60 * 1000);
+}
+
+function stopAutoBackup() {
+  if (backupTimer) { clearInterval(backupTimer); backupTimer = null; }
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!data || typeof data.bosses !== "object" || !data.bosses) {
+        throw new Error("в файле нет данных о боссах");
+      }
+      Object.keys(data.bosses).forEach(name => { data.bosses[name] = normBoss(data.bosses[name]); });
+      if (!data.current || !data.bosses[data.current]) {
+        data.current = Object.keys(data.bosses)[0];
+      }
+      if (!TORMENT_KEYS.includes(data.torment)) data.torment = DEFAULT_TORMENT;
+      state = data;
+      renderSelect();
+      renderTormentTabs();
+      render();
+      save();
+      alert("Данные успешно загружены из файла.");
+    } catch (e) {
+      alert("Не удалось прочитать файл: " + e.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+$("exportBtn").addEventListener("click", exportData);
+$("importBtn").addEventListener("click", () => $("importFile").click());
+$("importFile").addEventListener("change", e => {
+  if (e.target.files[0]) importData(e.target.files[0]);
+  e.target.value = ""; // разрешаем повторный выбор того же файла
+});
+
+const autoBox = $("autoBackup");
+autoBox.checked = autoBackup;
+autoBox.addEventListener("change", () => {
+  autoBackup = autoBox.checked;
+  localStorage.setItem(AUTO_KEY, autoBackup ? "1" : "0");
+  if (autoBackup) startAutoBackup(); else stopAutoBackup();
+});
+if (autoBackup) startAutoBackup();
+
+renderSelect();
+renderTormentTabs();
+render();
+</script>
+</body>
+</html>
