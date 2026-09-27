@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
@@ -10,6 +12,8 @@ from rest_framework.views import APIView
 
 from .models import TelegramProfile, UserState
 from .telegram_auth import verify_telegram_auth
+
+logger = logging.getLogger("tracker.auth")
 
 
 def profile_payload(user):
@@ -44,6 +48,14 @@ class TelegramLoginView(APIView):
             settings.TELEGRAM_AUTH_MAX_AGE,
         )
         if not ok:
+            # видно в логах RelaxDev: причина отказа, какие поля пришли и длина токена
+            # (сам токен не логируем). Чаще всего 401 = токен не от того бота.
+            logger.warning(
+                "Telegram auth rejected: %s | fields=%s | token_len=%s",
+                error,
+                sorted(k for k in data.keys() if k != "hash"),
+                len((settings.TELEGRAM_BOT_TOKEN or "").strip()),
+            )
             return Response({"detail": error}, status=status.HTTP_401_UNAUTHORIZED)
 
         telegram_id = int(data["id"])
