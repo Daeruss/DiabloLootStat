@@ -18,6 +18,8 @@ const botName = ref("");
 const saveStatus = ref("");
 const newBossName = ref("");
 const importInput = ref(null);
+const signingIn = ref(false);
+const loginError = ref("");
 
 const state = reactive({ bosses: {}, current: "", torment: DEFAULT_TORMENT });
 let loaded = false; // защита от сохранения во время начальной загрузки
@@ -184,12 +186,19 @@ watch(state, scheduleSave, { deep: true });
 
 // ── Авторизация через Telegram ──
 window.onTelegramAuth = async (tgUser) => {
+  signingIn.value = true;
+  loginError.value = "";
   try {
     const profile = await api("/auth/telegram/", { method: "POST", body: tgUser });
     user.value = profile;
     await loadState();
   } catch (err) {
-    alert("Ошибка входа через Telegram: " + err.message);
+    loginError.value =
+      "Не удалось войти: " +
+      err.message +
+      (err.status ? ` (HTTP ${err.status})` : "");
+  } finally {
+    signingIn.value = false;
   }
 };
 
@@ -254,6 +263,8 @@ async function logout() {
       Данные сохраняются в облаке и привязаны к вашему аккаунту.
     </p>
     <div class="tg-holder" id="tg-login"></div>
+    <p v-if="signingIn" style="color: var(--gold)">Входим…</p>
+    <p v-if="loginError" style="color: var(--red-bright)">{{ loginError }}</p>
     <p v-if="!botName" style="color: var(--red-bright)">
       На сервере не настроен Telegram-бот (TELEGRAM_BOT_USERNAME).
     </p>
