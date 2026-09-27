@@ -5,6 +5,8 @@ from django.contrib import admin
 from django.http import FileResponse, Http404
 from django.urls import include, path, re_path
 
+from tracker.views import admin_stats
+
 
 def spa_index(request):
     """Отдаём index.html собранного Vue-приложения (SPA-fallback)."""
@@ -15,6 +17,7 @@ def spa_index(request):
 
 
 urlpatterns = [
+    path("admin/stats/", admin_stats, name="admin-stats"),
     path("admin/", admin.site.urls),
     path("api/", include("tracker.urls")),
 ]
