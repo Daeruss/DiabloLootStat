@@ -14,7 +14,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import TelegramProfile, UserState
-from .stats import FIELDS, per_boss_totals, totals_for_state
+from .stats import (
+    TORMENT_KEYS,
+    TORMENT_OPTIONS,
+    collect_boss_names,
+    is_empty,
+    per_boss_filtered,
+    totals_filtered,
+    with_rates,
+)
 from .telegram_auth import verify_telegram_auth
 
 logger = logging.getLogger("tracker.auth")
@@ -118,53 +126,78 @@ class LogoutView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+SUM_KEYS = ["runs", "myth", "mythTal", "splBaal", "splMeph", "splDiablo", "splinters"]
+
+
+def _player_name(user):
+    tg = getattr(user, "telegram", None)
+    if tg:
+        return tg.first_name or tg.username or f"tg_{tg.telegram_id}"
+    return user.username
+
+
 @staff_member_required
 def admin_stats(request):
-    """Сводка статистики по всем аккаунтам (для персонала)."""
-    states = (
-        UserState.objects.select_related("user", "user__telegram")
-        .order_by("-updated_at")
+    """Сводка статистики по всем аккаунтам с фильтрами (для персонала)."""
+    states = list(
+        UserState.objects.select_related("user", "user__telegram").order_by("-updated_at")
     )
 
-    def player_name(user):
-        tg = getattr(user, "telegram", None)
-        if tg:
-            return tg.first_name or tg.username or f"tg_{tg.telegram_id}"
-        return user.username
+    all_bosses = collect_boss_names(states)
+
+    # фильтры из query-строки
+    torment = request.GET.get("torment", "all")
+    boss = request.GET.get("boss", "all")
+    sort = request.GET.get("sort", "runs")
+    t_filter = torment if torment in TORMENT_KEYS else None
+    b_filter = boss if boss in all_bosses else None
+    if sort not in SUM_KEYS:
+        sort = "runs"
 
     players = []
-    global_totals = {f: 0 for f in FIELDS}
-    global_totals["splinters"] = 0
+    global_totals = {k: 0 for k in SUM_KEYS}
     boss_totals = {}
 
     for st in states:
-        t = totals_for_state(st.data)
-        players.append(
-            {
-                "name": player_name(st.user),
-                "telegram_id": getattr(getattr(st.user, "telegram", None), "telegram_id", None),
-                "totals": t,
-                "updated_at": st.updated_at,
-            }
-        )
-        for key in list(FIELDS) + ["splinters"]:
+        t = totals_filtered(st.data, t_filter, b_filter)
+        for key in SUM_KEYS:
             global_totals[key] += t[key]
-        for name, agg in per_boss_totals(st.data).items():
-            acc = boss_totals.setdefault(name, {k: 0 for k in list(FIELDS) + ["splinters"]})
-            for key in list(FIELDS) + ["splinters"]:
+        if not is_empty(t):
+            players.append(
+                {
+                    "name": _player_name(st.user),
+                    "telegram_id": getattr(
+                        getattr(st.user, "telegram", None), "telegram_id", None
+                    ),
+                    "totals": with_rates(t),
+                    "updated_at": st.updated_at,
+                }
+            )
+        for name, agg in per_boss_filtered(st.data, t_filter).items():
+            if b_filter and name != b_filter:
+                continue
+            acc = boss_totals.setdefault(name, {k: 0 for k in SUM_KEYS})
+            for key in SUM_KEYS:
                 acc[key] += agg[key]
 
+    players.sort(key=lambda p: p["totals"].get(sort, 0), reverse=True)
     bosses = sorted(
-        ({"name": n, "totals": v} for n, v in boss_totals.items()),
-        key=lambda b: b["totals"]["runs"],
+        ({"name": n, "totals": with_rates(v)} for n, v in boss_totals.items()),
+        key=lambda b: b["totals"].get(sort, 0),
         reverse=True,
     )
 
     context = {
         "players": players,
         "player_count": len(players),
-        "global_totals": global_totals,
+        "total_accounts": len(states),
+        "global_totals": with_rates(global_totals),
         "bosses": bosses,
+        "torment_options": TORMENT_OPTIONS,
+        "boss_options": all_bosses,
+        "sel_torment": torment,
+        "sel_boss": boss if b_filter else "all",
+        "sel_sort": sort,
     }
     return render(request, "tracker/admin_stats.html", context)
 
