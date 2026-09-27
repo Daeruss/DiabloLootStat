@@ -12,6 +12,9 @@ def verify_telegram_auth(data: dict, bot_token: str, max_age: int = 86400):
 
     data — payload от Telegram-виджета (id, first_name, auth_date, hash, ...).
     """
+    # обрезаем случайные пробелы/переносы строк из переменной окружения —
+    # иначе секретный ключ не совпадёт и подпись всегда будет невалидной
+    bot_token = (bot_token or "").strip()
     if not bot_token:
         return False, "На сервере не задан TELEGRAM_BOT_TOKEN"
 

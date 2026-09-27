@@ -27,7 +27,9 @@ class ConfigView(APIView):
     """Публичный конфиг для фронтенда + установка csrftoken cookie."""
 
     def get(self, request):
-        return Response({"bot_username": settings.TELEGRAM_BOT_USERNAME})
+        return Response(
+            {"bot_username": (settings.TELEGRAM_BOT_USERNAME or "").strip().lstrip("@")}
+        )
 
 
 @method_decorator(csrf_exempt, name="dispatch")
