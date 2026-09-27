@@ -213,7 +213,9 @@ function mountTelegramWidget() {
   s.setAttribute("data-size", "large");
   s.setAttribute("data-userpic", "true");
   s.setAttribute("data-request-access", "write");
-  s.setAttribute("data-onauth", "onTelegramAuth(user)");
+  // redirect-режим: Telegram сам сделает top-level переход на наш backend-URL
+  // с данными авторизации. Надёжнее callback-режима в SPA.
+  s.setAttribute("data-auth-url", location.origin + "/api/auth/telegram/redirect/");
   holder.appendChild(s);
 }
 
@@ -232,6 +234,12 @@ async function logout() {
 
 // ── Инициализация ──
 (async () => {
+  // если вернулись с ошибкой авторизации из redirect-режима — покажем её
+  const authErr = new URLSearchParams(location.search).get("auth_error");
+  if (authErr) {
+    loginError.value = "Не удалось войти: " + authErr;
+    history.replaceState({}, "", location.pathname);
+  }
   try {
     const cfg = await api("/config/");
     botName.value = cfg.bot_username || "";

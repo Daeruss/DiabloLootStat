@@ -1,8 +1,10 @@
 import logging
+from urllib.parse import quote
 
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
+from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from rest_framework import status
@@ -26,6 +28,35 @@ def profile_payload(user):
     }
 
 
+def upsert_and_login(request, data):
+    """Создаёт/обновляет Telegram-профиль по проверенным данным и логинит сессию."""
+    telegram_id = int(data["id"])
+    profile = TelegramProfile.objects.filter(telegram_id=telegram_id).first()
+    if profile:
+        user = profile.user
+    else:
+        user = User.objects.create(username=f"tg_{telegram_id}")
+        profile = TelegramProfile(user=user, telegram_id=telegram_id)
+
+    profile.username = data.get("username") or None
+    profile.first_name = data.get("first_name") or ""
+    profile.last_name = data.get("last_name") or ""
+    profile.photo_url = data.get("photo_url") or None
+    profile.save()
+
+    login(request, user)
+    return user
+
+
+def _log_reject(where, error):
+    logger.warning(
+        "Telegram %s rejected: %s | token_len=%s",
+        where,
+        error,
+        len((settings.TELEGRAM_BOT_TOKEN or "").strip()),
+    )
+
+
 @method_decorator(ensure_csrf_cookie, name="get")
 class ConfigView(APIView):
     """Публичный конфиг для фронтенда + установка csrftoken cookie."""
@@ -38,42 +69,40 @@ class ConfigView(APIView):
 
 @method_decorator(csrf_exempt, name="dispatch")
 class TelegramLoginView(APIView):
-    """Вход через Telegram Login Widget. CSRF не нужен — подпись проверяет Telegram."""
+    """Вход через Telegram Login Widget (callback-режим, POST с JSON).
+
+    CSRF не нужен — подлинность подтверждает подпись Telegram."""
 
     def post(self, request):
-        data = request.data
+        data = {k: str(v) for k, v in request.data.items()}
         ok, error = verify_telegram_auth(
-            {k: str(v) for k, v in data.items()},
-            settings.TELEGRAM_BOT_TOKEN,
-            settings.TELEGRAM_AUTH_MAX_AGE,
+            dict(data), settings.TELEGRAM_BOT_TOKEN, settings.TELEGRAM_AUTH_MAX_AGE
         )
         if not ok:
-            # видно в логах RelaxDev: причина отказа, какие поля пришли и длина токена
-            # (сам токен не логируем). Чаще всего 401 = токен не от того бота.
-            logger.warning(
-                "Telegram auth rejected: %s | fields=%s | token_len=%s",
-                error,
-                sorted(k for k in data.keys() if k != "hash"),
-                len((settings.TELEGRAM_BOT_TOKEN or "").strip()),
-            )
+            _log_reject("auth (POST)", error)
             return Response({"detail": error}, status=status.HTTP_401_UNAUTHORIZED)
 
-        telegram_id = int(data["id"])
-        profile = TelegramProfile.objects.filter(telegram_id=telegram_id).first()
-        if profile:
-            user = profile.user
-        else:
-            user = User.objects.create(username=f"tg_{telegram_id}")
-            profile = TelegramProfile(user=user, telegram_id=telegram_id)
-
-        profile.username = data.get("username") or None
-        profile.first_name = data.get("first_name") or ""
-        profile.last_name = data.get("last_name") or ""
-        profile.photo_url = data.get("photo_url") or None
-        profile.save()
-
-        login(request, user)
+        user = upsert_and_login(request, data)
         return Response(profile_payload(user))
+
+
+class TelegramRedirectView(APIView):
+    """Вход через Telegram Login Widget (redirect-режим, GET с query-параметрами).
+
+    Надёжнее callback-режима в SPA: Telegram сам делает top-level переход сюда,
+    мы проверяем подпись, ставим сессию и возвращаем пользователя на главную."""
+
+    def get(self, request):
+        data = {k: str(v) for k, v in request.query_params.items()}
+        ok, error = verify_telegram_auth(
+            dict(data), settings.TELEGRAM_BOT_TOKEN, settings.TELEGRAM_AUTH_MAX_AGE
+        )
+        if not ok:
+            _log_reject("auth (redirect)", error)
+            return redirect("/?auth_error=" + quote(error or "auth failed"))
+
+        upsert_and_login(request, data)
+        return redirect("/")
 
 
 class LogoutView(APIView):
