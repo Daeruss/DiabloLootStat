@@ -216,7 +216,7 @@ function loginRedirect() {
     "https://oauth.telegram.org/auth" +
     "?bot_id=" + encodeURIComponent(botId.value) +
     "&origin=" + encodeURIComponent(origin) +
-    "&return_to=" + encodeURIComponent(origin + "/api/auth/telegram/redirect/") +
+    "&return_to=" + encodeURIComponent(origin + "/") +
     "&request_access=write" +
     "&embed=0";
   window.location.href = url;
@@ -252,14 +252,21 @@ async function logout() {
   mountTelegramWidget();
 }
 
+// oauth.telegram.org (embed=0) возвращает данные в hash: #tgAuthResult=<base64(JSON)>
+function parseTgAuthResult() {
+  const m = location.hash.match(/tgAuthResult=([^&]+)/);
+  if (!m) return null;
+  try {
+    let b64 = decodeURIComponent(m[1]).replace(/-/g, "+").replace(/_/g, "/");
+    while (b64.length % 4) b64 += "=";
+    return JSON.parse(atob(b64));
+  } catch (e) {
+    return null;
+  }
+}
+
 // ── Инициализация ──
 (async () => {
-  // если вернулись с ошибкой авторизации из redirect-режима — покажем её
-  const authErr = new URLSearchParams(location.search).get("auth_error");
-  if (authErr) {
-    loginError.value = "Не удалось войти: " + authErr;
-    history.replaceState({}, "", location.pathname);
-  }
   try {
     const cfg = await api("/config/");
     botName.value = cfg.bot_username || "";
@@ -267,12 +274,24 @@ async function logout() {
   } catch (e) {
     /* ignore */
   }
-  try {
-    user.value = await api("/me/");
-    await loadState();
-  } catch (e) {
-    user.value = null;
+
+  // 1) вернулись из Telegram с результатом в hash — логинимся по нему
+  const tgResult = parseTgAuthResult();
+  if (tgResult) {
+    history.replaceState({}, "", location.pathname);
+    await window.onTelegramAuth(tgResult);
   }
+
+  // 2) иначе проверяем существующую сессию
+  if (!user.value) {
+    try {
+      user.value = await api("/me/");
+      await loadState();
+    } catch (e) {
+      user.value = null;
+    }
+  }
+
   ready.value = true;
   if (!user.value) {
     await nextTick();
