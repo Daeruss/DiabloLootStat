@@ -8,3 +8,4 @@ staticfiles/
 .venv/
 venv/
 db.sqlite3
+/branding/
