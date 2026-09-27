@@ -216,6 +216,16 @@ select {
   text-align: center;
 }
 .login p { color: var(--muted); font-size: 14px; line-height: 1.6; }
-.login .tg-holder { margin-top: 18px; display: flex; justify-content: center; min-height: 48px; }
+.login .tg-login-btn {
+  margin-top: 20px;
+  font-size: 16px;
+  padding: 12px 26px;
+  background: linear-gradient(#2aabee, #229ed9);
+  color: #fff;
+  border: none;
+}
+.login .tg-login-btn:hover { background: linear-gradient(#3ab5f0, #2aabee); }
+.login .tg-alt { margin-top: 20px; margin-bottom: 6px; font-size: 12px; color: var(--muted); }
+.login .tg-holder { margin-top: 6px; display: flex; justify-content: center; min-height: 48px; }
 .center-note { text-align: center; color: var(--muted); margin-top: 40px; }
 .save-state { color: var(--muted); font-size: 12px; min-height: 16px; }

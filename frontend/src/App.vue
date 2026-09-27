@@ -15,6 +15,7 @@ import {
 const user = ref(null); // профиль Telegram или null
 const ready = ref(false); // завершилась ли первичная проверка авторизации
 const botName = ref("");
+const botId = ref("");
 const saveStatus = ref("");
 const newBossName = ref("");
 const importInput = ref(null);
@@ -202,6 +203,25 @@ window.onTelegramAuth = async (tgUser) => {
   }
 };
 
+// Прямой переход верхнего окна на страницу авторизации Telegram (без iframe).
+// Надёжнее официального виджета в браузерах с жёсткой защитой от трекеров
+// (например, Yandex Browser), где iframe oauth.telegram.org может блокироваться.
+function loginRedirect() {
+  if (!botId.value) {
+    loginError.value = "Сервер не сообщил bot_id — проверьте TELEGRAM_BOT_TOKEN.";
+    return;
+  }
+  const origin = location.origin;
+  const url =
+    "https://oauth.telegram.org/auth" +
+    "?bot_id=" + encodeURIComponent(botId.value) +
+    "&origin=" + encodeURIComponent(origin) +
+    "&return_to=" + encodeURIComponent(origin + "/api/auth/telegram/redirect/") +
+    "&request_access=write" +
+    "&embed=0";
+  window.location.href = url;
+}
+
 function mountTelegramWidget() {
   const holder = document.getElementById("tg-login");
   if (!holder || !botName.value) return;
@@ -243,6 +263,7 @@ async function logout() {
   try {
     const cfg = await api("/config/");
     botName.value = cfg.bot_username || "";
+    botId.value = cfg.bot_id || "";
   } catch (e) {
     /* ignore */
   }
@@ -270,6 +291,10 @@ async function logout() {
       Войдите через Telegram, чтобы вести статистику дропа боссов.
       Данные сохраняются в облаке и привязаны к вашему аккаунту.
     </p>
+    <button v-if="botId" class="btn tg-login-btn" @click="loginRedirect">
+      Войти через Telegram
+    </button>
+    <p class="tg-alt">или официальная кнопка Telegram:</p>
     <div class="tg-holder" id="tg-login"></div>
     <p v-if="signingIn" style="color: var(--gold)">Входим…</p>
     <p v-if="loginError" style="color: var(--red-bright)">{{ loginError }}</p>

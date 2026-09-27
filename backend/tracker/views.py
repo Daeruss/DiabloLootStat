@@ -62,8 +62,13 @@ class ConfigView(APIView):
     """Публичный конфиг для фронтенда + установка csrftoken cookie."""
 
     def get(self, request):
+        token = (settings.TELEGRAM_BOT_TOKEN or "").strip()
+        bot_id = token.split(":")[0] if ":" in token else ""
         return Response(
-            {"bot_username": (settings.TELEGRAM_BOT_USERNAME or "").strip().lstrip("@")}
+            {
+                "bot_username": (settings.TELEGRAM_BOT_USERNAME or "").strip().lstrip("@"),
+                "bot_id": bot_id,
+            }
         )
 
 
