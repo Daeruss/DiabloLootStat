@@ -14,7 +14,6 @@ import {
 // ── Состояние приложения ──
 const user = ref(null); // профиль Telegram или null
 const ready = ref(false); // завершилась ли первичная проверка авторизации
-const botName = ref("");
 const botId = ref("");
 const saveStatus = ref("");
 const newBossName = ref("");
@@ -222,23 +221,6 @@ function loginRedirect() {
   window.location.href = url;
 }
 
-function mountTelegramWidget() {
-  const holder = document.getElementById("tg-login");
-  if (!holder || !botName.value) return;
-  holder.innerHTML = "";
-  const s = document.createElement("script");
-  s.async = true;
-  s.src = "https://telegram.org/js/telegram-widget.js?22";
-  s.setAttribute("data-telegram-login", botName.value);
-  s.setAttribute("data-size", "large");
-  s.setAttribute("data-userpic", "true");
-  s.setAttribute("data-request-access", "write");
-  // redirect-режим: Telegram сам сделает top-level переход на наш backend-URL
-  // с данными авторизации. Надёжнее callback-режима в SPA.
-  s.setAttribute("data-auth-url", location.origin + "/api/auth/telegram/redirect/");
-  holder.appendChild(s);
-}
-
 async function logout() {
   try {
     await api("/auth/logout/", { method: "POST" });
@@ -248,8 +230,6 @@ async function logout() {
   user.value = null;
   loaded = false;
   Object.assign(state, defaultState());
-  await nextTick();
-  mountTelegramWidget();
 }
 
 // oauth.telegram.org (embed=0) возвращает данные в hash: #tgAuthResult=<base64(JSON)>
@@ -269,7 +249,6 @@ function parseTgAuthResult() {
 (async () => {
   try {
     const cfg = await api("/config/");
-    botName.value = cfg.bot_username || "";
     botId.value = cfg.bot_id || "";
   } catch (e) {
     /* ignore */
@@ -293,10 +272,6 @@ function parseTgAuthResult() {
   }
 
   ready.value = true;
-  if (!user.value) {
-    await nextTick();
-    mountTelegramWidget();
-  }
 })();
 </script>
 
@@ -313,12 +288,10 @@ function parseTgAuthResult() {
     <button v-if="botId" class="btn tg-login-btn" @click="loginRedirect">
       Войти через Telegram
     </button>
-    <p class="tg-alt">или официальная кнопка Telegram:</p>
-    <div class="tg-holder" id="tg-login"></div>
     <p v-if="signingIn" style="color: var(--gold)">Входим…</p>
     <p v-if="loginError" style="color: var(--red-bright)">{{ loginError }}</p>
-    <p v-if="!botName" style="color: var(--red-bright)">
-      На сервере не настроен Telegram-бот (TELEGRAM_BOT_USERNAME).
+    <p v-if="!botId" style="color: var(--red-bright)">
+      На сервере не настроен Telegram-бот (TELEGRAM_BOT_TOKEN/USERNAME).
     </p>
   </div>
 
