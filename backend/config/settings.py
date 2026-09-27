@@ -62,16 +62,34 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("POSTGRES_DB", "d4tracker"),
-        "USER": os.environ.get("POSTGRES_USER", "d4"),
-        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "d4"),
-        "HOST": os.environ.get("POSTGRES_HOST", "127.0.0.1"),
-        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+# DATABASE_URL (его отдаёт RelaxDev/облачные платформы) имеет приоритет.
+# Иначе собираем подключение из отдельных POSTGRES_* (локальный docker-compose).
+_database_url = os.environ.get("DATABASE_URL")
+if _database_url:
+    from urllib.parse import unquote, urlparse
+
+    _u = urlparse(_database_url)
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": _u.path.lstrip("/"),
+            "USER": unquote(_u.username or ""),
+            "PASSWORD": unquote(_u.password or ""),
+            "HOST": _u.hostname or "",
+            "PORT": str(_u.port or ""),
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("POSTGRES_DB", "d4tracker"),
+            "USER": os.environ.get("POSTGRES_USER", "d4"),
+            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "d4"),
+            "HOST": os.environ.get("POSTGRES_HOST", "127.0.0.1"),
+            "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = []
 
@@ -86,6 +104,15 @@ STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
 }
+
+# Собранный Vue-фронтенд (для комбинированного образа: Django отдаёт SPA + API).
+# В образе сюда копируется frontend/dist. Если папки нет (например, backend
+# запущен отдельно рядом с nginx) — SPA просто не раздаётся этим сервисом.
+FRONTEND_DIST = BASE_DIR / "frontend_dist"
+SERVE_FRONTEND = FRONTEND_DIST.is_dir()
+if SERVE_FRONTEND:
+    WHITENOISE_ROOT = str(FRONTEND_DIST)
+    WHITENOISE_INDEX_FILE = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

@@ -1,0 +1,5 @@
+# Shell-скрипты и Dockerfile должны иметь LF — они выполняются в Linux-контейнерах.
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.Dockerfile text eol=lf
+entrypoint.sh text eol=lf
