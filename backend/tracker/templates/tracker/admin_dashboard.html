@@ -34,6 +34,22 @@
     .msg { padding: 10px 14px; border-radius: 8px; margin-top: 12px; }
     .msg.success { background: #1c3a1c; border: 1px solid #2f6f2f; color: #bfe6bf; }
     .msg.error { background: #3a1c1c; border: 1px solid #7a2f2f; color: #e6bfbf; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 12px; }
+    .tablewrap table { margin-top: 0; }
+    @media (max-width: 640px) {
+      body { padding: 16px 12px 40px; }
+      h1 { font-size: 20px; }
+      .nav { gap: 8px; }
+      .nav a { padding: 6px 10px; font-size: 13px; }
+      .filters, .season-form { flex-direction: column; align-items: stretch; }
+      .season-form .chk { flex-direction: row; }
+      select, input[type=text], input[type=number] { width: 100%; min-width: 0; }
+      button { width: 100%; }
+      .card { min-width: calc(50% - 12px); flex: 1 1 calc(50% - 12px); padding: 12px 14px; }
+      .card .num { font-size: 20px; }
+      table { min-width: 760px; }
+      th, td { padding: 6px 8px; font-size: 13px; }
+    }
   </style>
 </head>
 <body>
@@ -106,7 +122,7 @@
   </div>
 
   <h2>По игрокам <span class="muted">(нажмите на имя — детально)</span></h2>
-  <table>
+  <div class="tablewrap"><table>
     <tr>
       <th>Игрок</th><th>Telegram ID</th><th>Забеги</th><th>Мифики</th><th>Талисманы</th>
       <th>Печати</th><th>Осколки</th><th>Шанс мифика</th><th>Шанс тал.</th>
@@ -130,10 +146,10 @@
     {% empty %}
     <tr><td colspan="12">Нет данных под выбранным фильтром.</td></tr>
     {% endfor %}
-  </table>
+  </table></div>
 
   <h2>По боссам{% if sel_torment != "all" %} · Torment {{ sel_torment }}{% endif %}</h2>
-  <table>
+  <div class="tablewrap"><table>
     <tr>
       <th>Босс</th><th>Забеги</th><th>Мифики</th><th>Талисманы</th><th>Печати</th>
       <th>Осколки Баала</th><th>Осколки Мефисто</th><th>Осколки Диабло</th>
@@ -155,6 +171,6 @@
     {% empty %}
     <tr><td colspan="10">Нет данных под выбранным фильтром.</td></tr>
     {% endfor %}
-  </table>
+  </table></div>
 </body>
 </html>

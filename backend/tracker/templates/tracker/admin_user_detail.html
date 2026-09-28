@@ -27,6 +27,18 @@
     tr:nth-child(even) td { background: #1b160f; }
     .myth { color: #d97f2b; } .mythtal { color: #d94fb0; } .mythseal { color: #9b6dff; }
     .spl { color: #7fa8d9; } .rate { color: #6fae6f; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 12px; }
+    .tablewrap table { margin-top: 0; }
+    @media (max-width: 640px) {
+      body { padding: 16px 12px 40px; }
+      h1 { font-size: 20px; }
+      .head img { width: 44px; height: 44px; }
+      .card { min-width: calc(50% - 12px); flex: 1 1 calc(50% - 12px); padding: 12px 14px; }
+      .card .num { font-size: 20px; }
+      select { width: 100%; }
+      table { min-width: 680px; }
+      th, td { padding: 6px 8px; font-size: 13px; }
+    }
   </style>
 </head>
 <body>
@@ -66,7 +78,7 @@
   </div>
 
   <h2>По боссам <span class="muted">(нажмите на босса — разбивка по Torment)</span></h2>
-  <table>
+  <div class="tablewrap"><table>
     <tr>
       <th>Босс</th><th>Забеги</th><th>Мифики</th><th>Талисманы</th><th>Печати</th>
       <th>Осколки</th><th>Шанс мифика</th><th>Шанс печати</th><th>Оск./забег</th>
@@ -86,11 +98,11 @@
     {% empty %}
     <tr><td colspan="9">Нет данных в этом сезоне.</td></tr>
     {% endfor %}
-  </table>
+  </table></div>
 
   {% if torment_rows %}
   <h2>{{ sel_boss }} · по уровням Torment</h2>
-  <table>
+  <div class="tablewrap"><table>
     <tr>
       <th>Torment</th><th>Забеги</th><th>Мифики</th><th>Талисманы</th><th>Печати</th>
       <th>Осколки Баала</th><th>Осколки Мефисто</th><th>Осколки Диабло</th>
@@ -110,7 +122,7 @@
       <td class="rate">{{ r.totals.spl_per_run }}</td>
     </tr>
     {% endfor %}
-  </table>
+  </table></div>
   {% endif %}
 </body>
 </html>
