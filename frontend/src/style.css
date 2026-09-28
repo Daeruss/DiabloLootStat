@@ -233,3 +233,51 @@ select {
 .login .tg-login-btn:hover { background: linear-gradient(#3ab5f0, #2aabee); }
 .center-note { text-align: center; color: var(--muted); margin-top: 40px; }
 .save-state { color: var(--muted); font-size: 12px; min-height: 16px; }
+
+/* тач-устройства: убираем подсветку тапа и задержку двойного тапа */
+button, .torment-tab { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.big-btn, .torment-tab, .btn { user-select: none; }
+
+/* ── Планшеты и телефоны ── */
+@media (max-width: 600px) {
+  body { padding: 16px 10px 40px; }
+  h1 { font-size: 20px; letter-spacing: 0.5px; }
+  .subtitle { font-size: 12px; margin-bottom: 16px; }
+
+  .topbar { flex-wrap: wrap; margin-bottom: 10px; }
+  .user-chip { font-size: 13px; }
+
+  .boss-select { flex-direction: column; align-items: stretch; gap: 10px; }
+  .boss-select select { width: 100%; min-width: 0; }
+
+  .torment-tabs { gap: 6px; margin-bottom: 16px; }
+  .torment-tab { padding: 7px 12px; font-size: 13px; }
+
+  .stats { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+  .stat { padding: 12px 10px; }
+  .stat .num { font-size: 24px; }
+  .stat .lbl { font-size: 10px; }
+
+  .counters { gap: 10px; }
+  .counter-card { flex: 1 1 140px; padding: 14px 10px; }
+  .counter-card h3 { font-size: 14px; margin-bottom: 10px; }
+  .big-btn { width: 50px; height: 50px; font-size: 24px; }
+  .ctrl { gap: 10px; }
+  .ctrl .val { font-size: 32px; min-width: 42px; }
+
+  .splinters { grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); }
+  .splinters .big-btn { width: 42px; height: 42px; }
+
+  .footer-actions { flex-direction: column; align-items: stretch; gap: 12px; text-align: center; }
+  .footer-actions .btn-del { width: 100%; }
+
+  .data-buttons .btn { flex: 1 1 auto; }
+  .login { margin-top: 28px; padding: 24px 18px; }
+  .login .tg-login-btn { width: 100%; }
+}
+
+/* ── Узкие телефоны: счётчики в один столбец ── */
+@media (max-width: 380px) {
+  .counters .counter-card { flex-basis: 100%; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+}
