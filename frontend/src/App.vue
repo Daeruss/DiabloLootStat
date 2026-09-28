@@ -78,7 +78,7 @@ const rateDetail = computed(() => {
 
 const mainCounters = [
   { type: "runs", title: "Забеги на босса", cls: "", hint: "Нажимай «+» после каждого убийства" },
-  { type: "myth", title: "Выпало мификов", cls: "myth", hint: "Мифическое (Uber Unique) обмундирование" },
+  { type: "myth", title: "Выпало мификов/искр", cls: "myth", hint: "Мифическое (Uber Unique) обмундирование" },
   { type: "mythTal", title: "Мифические талисманы", cls: "mythtal", hint: "Мифические талисманы" },
   { type: "mythSeal", title: "Мифические печати", cls: "mythseal", hint: "Мифические печати" },
 ];
@@ -341,6 +341,7 @@ function parseTgAuthResult() {
       <span class="user-chip">
         <img v-if="user.photo_url" :src="user.photo_url" alt="" />
         {{ user.first_name || user.username || "Игрок" }}
+        <a v-if="user.is_staff" class="btn admin-btn" href="/admin/dashboard/">🛠 Админка</a>
         <button class="btn btn-del" @click="logout">выйти</button>
       </span>
     </div>

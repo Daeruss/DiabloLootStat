@@ -48,6 +48,7 @@ def profile_payload(user):
         "username": tg.username if tg else None,
         "first_name": tg.first_name if tg else user.first_name,
         "photo_url": tg.photo_url if tg else None,
+        "is_staff": bool(user.is_staff or user.is_superuser),
     }
 
 

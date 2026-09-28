@@ -54,6 +54,7 @@ select, input, button { font-family: inherit; font-size: 14px; }
 }
 .user-chip { display: flex; align-items: center; gap: 8px; color: var(--gold); font-size: 14px; }
 .user-chip img { width: 28px; height: 28px; border-radius: 50%; }
+.admin-btn { text-decoration: none; display: inline-flex; align-items: center; font-size: 13px; }
 
 .boss-select {
   display: flex;
