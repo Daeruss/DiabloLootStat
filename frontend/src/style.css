@@ -154,7 +154,10 @@ select {
   padding: 18px;
   text-align: center;
 }
-.counter-card h3 { margin: 0 0 14px; color: var(--gold); font-size: 15px; }
+.counter-card h3 { margin: 0 0 14px; color: var(--gold); font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 7px; }
+.cicon { display: inline-flex; }
+.cicon svg { width: 20px; height: 20px; display: block; }
+.splinters .cicon svg { width: 18px; height: 18px; }
 .ctrl { display: flex; align-items: center; justify-content: center; gap: 12px; }
 .big-btn {
   width: 54px; height: 54px;

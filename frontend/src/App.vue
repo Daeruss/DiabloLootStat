@@ -1,6 +1,7 @@
 <script setup>
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { api } from "./api";
+import { ICONS } from "./icons";
 import {
   TORMENTS,
   TORMENT_KEYS,
@@ -367,7 +368,7 @@ function parseTgAuthResult() {
           class="counter-card"
           :class="c.cls"
         >
-          <h3>{{ c.title }}</h3>
+          <h3><span class="cicon" v-html="ICONS[c.type]"></span>{{ c.title }}</h3>
           <div class="ctrl">
             <button class="big-btn minus" @click="inc(c.type, -1)">−</button>
             <span class="val">{{ curStat[c.type] }}</span>
@@ -385,7 +386,7 @@ function parseTgAuthResult() {
           class="counter-card"
           :class="c.cls"
         >
-          <h3>{{ c.title }}</h3>
+          <h3><span class="cicon" v-html="ICONS[c.type]"></span>{{ c.title }}</h3>
           <div class="ctrl">
             <button class="big-btn minus" @click="inc(c.type, -1)">−</button>
             <span class="val">{{ curStat[c.type] }}</span>
