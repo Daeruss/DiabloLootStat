@@ -2,18 +2,24 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Сводная статистика — все аккаунты</title>
+  <title>Админ-панель — Diablo 4 Tracker</title>
   <style>
-    body { font-family: "Segoe UI", system-ui, sans-serif; background: #14100c; color: #e8ddc8; margin: 0; padding: 28px; }
+    body { font-family: "Segoe UI", system-ui, sans-serif; background: #14100c; color: #e8ddc8; margin: 0; padding: 24px 28px 48px; }
     h1 { color: #f0d9a8; margin: 0 0 4px; }
     h2 { color: #c8aa6e; margin: 30px 0 10px; font-size: 18px; }
     .muted { color: #9a8a70; font-size: 13px; }
     a { color: #7fa8d9; }
-    .filters { background: #1f1912; border: 1px solid #43331f; border-radius: 10px; padding: 16px 18px; margin-top: 14px; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
-    .filters label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: #9a8a70; text-transform: uppercase; letter-spacing: .5px; }
-    .filters select { background: #2a2118; color: #e8ddc8; border: 1px solid #43331f; border-radius: 6px; padding: 8px 12px; font-size: 14px; min-width: 150px; }
-    .filters button { background: linear-gradient(#a12c22, #6e1c15); color: #fff; border: none; border-radius: 6px; padding: 9px 18px; font-size: 14px; cursor: pointer; }
-    .filters .reset { align-self: center; font-size: 13px; }
+    .nav { display: flex; flex-wrap: wrap; gap: 14px; margin: 10px 0 6px; font-size: 14px; }
+    .nav a { padding: 6px 12px; background: #1f1912; border: 1px solid #43331f; border-radius: 6px; text-decoration: none; }
+    .nav a:hover { border-color: #c8aa6e; }
+    .panel { background: #1f1912; border: 1px solid #43331f; border-radius: 10px; padding: 16px 18px; margin-top: 14px; }
+    .filters { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
+    .filters label, .season-form label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: #9a8a70; text-transform: uppercase; letter-spacing: .5px; }
+    select, input[type=text], input[type=number] { background: #2a2118; color: #e8ddc8; border: 1px solid #43331f; border-radius: 6px; padding: 8px 12px; font-size: 14px; min-width: 130px; }
+    button { background: linear-gradient(#a12c22, #6e1c15); color: #fff; border: none; border-radius: 6px; padding: 9px 18px; font-size: 14px; cursor: pointer; }
+    .reset { align-self: center; font-size: 13px; }
+    .season-form { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
+    .season-form .chk { flex-direction: row; align-items: center; gap: 6px; text-transform: none; color: #e8ddc8; font-size: 13px; }
     .cards { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
     .card { background: #1f1912; border: 1px solid #43331f; border-radius: 10px; padding: 14px 18px; min-width: 120px; }
     .card .num { font-size: 24px; font-weight: 700; color: #f0d9a8; }
@@ -23,39 +29,54 @@
     th { background: #2a2118; color: #c8aa6e; }
     td:first-child, th:first-child { text-align: left; }
     tr:nth-child(even) td { background: #1b160f; }
-    .myth { color: #d97f2b; }
-    .mythtal { color: #d94fb0; }
-    .mythseal { color: #9b6dff; }
-    .spl { color: #7fa8d9; }
-    .rate { color: #6fae6f; }
+    .myth { color: #d97f2b; } .mythtal { color: #d94fb0; } .mythseal { color: #9b6dff; }
+    .spl { color: #7fa8d9; } .rate { color: #6fae6f; }
+    .msg { padding: 10px 14px; border-radius: 8px; margin-top: 12px; }
+    .msg.success { background: #1c3a1c; border: 1px solid #2f6f2f; color: #bfe6bf; }
+    .msg.error { background: #3a1c1c; border: 1px solid #7a2f2f; color: #e6bfbf; }
   </style>
 </head>
 <body>
-  <h1>⚔️ Сводная статистика по всем аккаунтам</h1>
-  <p class="muted">Аккаунтов всего: {{ total_accounts }} · с данными под фильтром: {{ player_count }} · <a href="/admin/">← в админку</a> · <a href="/admin/merge-bosses/">🔀 объединить боссов</a></p>
+  <h1>⚔️ Админ-панель</h1>
+  <p class="muted">Текущий сезон: <b>{{ current_season }}</b> · аккаунтов: {{ total_accounts }}</p>
 
-  <form class="filters" method="get">
+  <div class="nav">
+    <a href="/admin/dashboard/">📊 Дашборд</a>
+    <a href="/admin/tracker/season/">📅 Сезоны</a>
+    <a href="/admin/tracker/boss/">👹 Боссы</a>
+    <a href="/admin/merge-bosses/">🔀 Объединить боссов</a>
+    <a href="/admin/">⚙️ Django admin</a>
+  </div>
+
+  {% if messages %}{% for m in messages %}<div class="msg {{ m.tags }}">{{ m }}</div>{% endfor %}{% endif %}
+
+  <h2>Добавить / обновить сезон</h2>
+  <form class="panel season-form" method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="add_season">
+    <label>Номер<input type="number" name="number" min="1" required placeholder="16"></label>
+    <label>Название (необязательно)<input type="text" name="title" placeholder="Сезон крови"></label>
+    <label class="chk"><input type="checkbox" name="is_current"> сделать текущим</label>
+    <button type="submit">Сохранить сезон</button>
+  </form>
+
+  <h2>Статистика</h2>
+  <form class="panel filters" method="get">
     <label>Сезон
       <select name="season">
-        {% for s in season_options %}
-        <option value="{{ s }}"{% if s == sel_season %} selected{% endif %}>Сезон {{ s }}</option>
-        {% endfor %}
+        {% for s in season_options %}<option value="{{ s }}"{% if s == sel_season %} selected{% endif %}>Сезон {{ s }}</option>{% endfor %}
       </select>
     </label>
     <label>Torment
       <select name="torment">
         <option value="all"{% if sel_torment == "all" %} selected{% endif %}>Все уровни</option>
-        {% for o in torment_options %}
-        <option value="{{ o.key }}"{% if sel_torment == o.key %} selected{% endif %}>{{ o.label }}</option>
-        {% endfor %}
+        {% for o in torment_options %}<option value="{{ o.key }}"{% if sel_torment == o.key %} selected{% endif %}>{{ o.label }}</option>{% endfor %}
       </select>
     </label>
     <label>Босс
       <select name="boss">
         <option value="all"{% if sel_boss == "all" %} selected{% endif %}>Все боссы</option>
-        {% for b in boss_options %}
-        <option value="{{ b }}"{% if sel_boss == b %} selected{% endif %}>{{ b }}</option>
-        {% endfor %}
+        {% for b in boss_options %}<option value="{{ b }}"{% if sel_boss == b %} selected{% endif %}>{{ b }}</option>{% endfor %}
       </select>
     </label>
     <label>Сортировать по
@@ -68,7 +89,7 @@
       </select>
     </label>
     <button type="submit">Применить</button>
-    <a class="reset" href="/admin/stats/">сбросить</a>
+    <a class="reset" href="/admin/dashboard/">сбросить</a>
   </form>
 
   <h2>Итого · Сезон {{ sel_season }}{% if sel_boss != "all" %} · {{ sel_boss }}{% endif %}{% if sel_torment != "all" %} · Torment {{ sel_torment }}{% endif %}</h2>
@@ -84,7 +105,7 @@
     <div class="card"><div class="num rate">{{ global_totals.spl_per_run }}</div><div class="lbl">Осколков / забег</div></div>
   </div>
 
-  <h2>По игрокам</h2>
+  <h2>По игрокам <span class="muted">(нажмите на имя — детально)</span></h2>
   <table>
     <tr>
       <th>Игрок</th><th>Telegram ID</th><th>Забеги</th><th>Мифики</th><th>Талисманы</th>
@@ -93,7 +114,7 @@
     </tr>
     {% for p in players %}
     <tr>
-      <td>{{ p.name }}</td>
+      <td>{% if p.telegram_id %}<a href="/admin/user/{{ p.telegram_id }}/?season={{ sel_season }}">{{ p.name }}</a>{% else %}{{ p.name }}{% endif %}</td>
       <td>{{ p.telegram_id|default:"—" }}</td>
       <td>{{ p.totals.runs }}</td>
       <td class="myth">{{ p.totals.myth }}</td>

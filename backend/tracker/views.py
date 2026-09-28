@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from rest_framework import status
@@ -167,7 +167,33 @@ def _player_name(user):
 
 @staff_member_required
 def admin_stats(request):
-    """Сводка статистики по всем аккаунтам с фильтрами (для персонала)."""
+    """Админ-дашборд: обзор статистики + добавление сезонов + переход к игрокам."""
+    # создание/переключение сезона
+    if request.method == "POST" and request.POST.get("action") == "add_season":
+        raw = (request.POST.get("number") or "").strip()
+        title = (request.POST.get("title") or "").strip()
+        make_current = request.POST.get("is_current") == "on"
+        try:
+            num = int(raw)
+            if num <= 0:
+                raise ValueError
+            season_obj, created = Season.objects.get_or_create(
+                number=num, defaults={"title": title}
+            )
+            if title:
+                season_obj.title = title
+            if make_current:
+                season_obj.is_current = True
+            season_obj.save()
+            messages.success(
+                request,
+                f"Сезон {num} {'создан' if created else 'обновлён'}"
+                + (" и сделан текущим." if make_current else "."),
+            )
+        except (TypeError, ValueError):
+            messages.error(request, "Некорректный номер сезона.")
+        return redirect("admin-stats")
+
     states = list(
         UserState.objects.select_related("user", "user__telegram").order_by("-updated_at")
     )
@@ -239,8 +265,9 @@ def admin_stats(request):
         "sel_torment": torment,
         "sel_boss": boss if b_filter else "all",
         "sel_sort": sort,
+        "current_season": current_season_number(),
     }
-    return render(request, "tracker/admin_stats.html", context)
+    return render(request, "tracker/admin_dashboard.html", context)
 
 
 @staff_member_required
@@ -296,6 +323,53 @@ def merge_bosses(request):
         return redirect("merge-bosses")
 
     return render(request, "tracker/merge_bosses.html", {"bosses": bosses})
+
+
+@staff_member_required
+def admin_user_detail(request, telegram_id):
+    """Детальная статистика одного игрока: по боссам и по Torment в выбранном сезоне."""
+    profile = get_object_or_404(TelegramProfile, telegram_id=telegram_id)
+    st = UserState.objects.filter(user=profile.user).first()
+    data = st.data if st else {}
+
+    all_seasons = list(Season.objects.values_list("number", flat=True))
+    try:
+        season = int(request.GET.get("season", current_season_number()))
+    except (TypeError, ValueError):
+        season = current_season_number()
+    if all_seasons and season not in all_seasons:
+        season = current_season_number()
+
+    bosses_data = get_bosses(data, season)
+
+    overall = {k: 0 for k in SUM_KEYS}
+    boss_rows = []
+    for name, agg in per_boss_filtered(bosses_data, None).items():
+        boss_rows.append({"name": name, "totals": with_rates(agg)})
+        for k in SUM_KEYS:
+            overall[k] += agg[k]
+    boss_rows.sort(key=lambda b: b["totals"]["runs"], reverse=True)
+
+    # разбивка по Torment для выбранного босса
+    sel_boss = request.GET.get("boss") or ""
+    torment_rows = []
+    if sel_boss and sel_boss in bosses_data:
+        for opt in TORMENT_OPTIONS:
+            t = totals_filtered(bosses_data, opt["key"], sel_boss)
+            torment_rows.append({"label": opt["label"], "totals": with_rates(t)})
+
+    context = {
+        "profile": profile,
+        "player_name": _player_name(profile.user),
+        "overall": with_rates(overall),
+        "boss_rows": boss_rows,
+        "season_options": all_seasons,
+        "sel_season": season,
+        "sel_boss": sel_boss,
+        "torment_rows": torment_rows,
+        "updated_at": st.updated_at if st else None,
+    }
+    return render(request, "tracker/admin_user_detail.html", context)
 
 
 @method_decorator(ensure_csrf_cookie, name="get")

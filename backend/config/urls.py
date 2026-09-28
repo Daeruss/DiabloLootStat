@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.http import FileResponse, Http404
 from django.urls import include, path, re_path
 
-from tracker.views import admin_stats, merge_bosses
+from tracker.views import admin_stats, admin_user_detail, merge_bosses
 
 
 def spa_index(request):
@@ -17,7 +17,9 @@ def spa_index(request):
 
 
 urlpatterns = [
+    path("admin/dashboard/", admin_stats, name="admin-dashboard"),
     path("admin/stats/", admin_stats, name="admin-stats"),
+    path("admin/user/<int:telegram_id>/", admin_user_detail, name="admin-user-detail"),
     path("admin/merge-bosses/", merge_bosses, name="merge-bosses"),
     path("admin/", admin.site.urls),
     path("api/", include("tracker.urls")),

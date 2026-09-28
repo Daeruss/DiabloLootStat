@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Игрок {{ player_name }} — статистика</title>
+  <style>
+    body { font-family: "Segoe UI", system-ui, sans-serif; background: #14100c; color: #e8ddc8; margin: 0; padding: 24px 28px 48px; }
+    h1 { color: #f0d9a8; margin: 0 0 4px; }
+    h2 { color: #c8aa6e; margin: 28px 0 10px; font-size: 18px; }
+    .muted { color: #9a8a70; font-size: 13px; }
+    a { color: #7fa8d9; }
+    .nav { display: flex; gap: 14px; margin: 10px 0; font-size: 14px; }
+    .nav a { padding: 6px 12px; background: #1f1912; border: 1px solid #43331f; border-radius: 6px; text-decoration: none; }
+    .head { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
+    .head img { width: 54px; height: 54px; border-radius: 50%; }
+    form.filters { display: inline-flex; gap: 10px; align-items: flex-end; margin-top: 8px; }
+    select { background: #2a2118; color: #e8ddc8; border: 1px solid #43331f; border-radius: 6px; padding: 8px 12px; font-size: 14px; }
+    button { background: linear-gradient(#a12c22, #6e1c15); color: #fff; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; }
+    .cards { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+    .card { background: #1f1912; border: 1px solid #43331f; border-radius: 10px; padding: 14px 18px; min-width: 110px; }
+    .card .num { font-size: 22px; font-weight: 700; color: #f0d9a8; }
+    .card .lbl { color: #9a8a70; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; margin-top: 6px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 12px; font-size: 14px; }
+    th, td { border: 1px solid #43331f; padding: 8px 12px; text-align: right; }
+    th { background: #2a2118; color: #c8aa6e; }
+    td:first-child, th:first-child { text-align: left; }
+    tr:nth-child(even) td { background: #1b160f; }
+    .myth { color: #d97f2b; } .mythtal { color: #d94fb0; } .mythseal { color: #9b6dff; }
+    .spl { color: #7fa8d9; } .rate { color: #6fae6f; }
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <a href="/admin/dashboard/?season={{ sel_season }}">← к дашборду</a>
+    <a href="/admin/">⚙️ Django admin</a>
+  </div>
+
+  <div class="head">
+    {% if profile.photo_url %}<img src="{{ profile.photo_url }}" alt="">{% endif %}
+    <div>
+      <h1>{{ player_name }}</h1>
+      <p class="muted">
+        Telegram ID: {{ profile.telegram_id }}{% if profile.username %} · @{{ profile.username }}{% endif %}
+        {% if updated_at %} · обновлено {{ updated_at|date:"Y-m-d H:i" }}{% endif %}
+      </p>
+    </div>
+  </div>
+
+  <form class="filters" method="get">
+    <label>Сезон
+      <select name="season" onchange="this.form.submit()">
+        {% for s in season_options %}<option value="{{ s }}"{% if s == sel_season %} selected{% endif %}>Сезон {{ s }}</option>{% endfor %}
+      </select>
+    </label>
+  </form>
+
+  <h2>Итого · Сезон {{ sel_season }}</h2>
+  <div class="cards">
+    <div class="card"><div class="num">{{ overall.runs }}</div><div class="lbl">Забегов</div></div>
+    <div class="card"><div class="num myth">{{ overall.myth }}</div><div class="lbl">Мификов</div></div>
+    <div class="card"><div class="num mythtal">{{ overall.mythTal }}</div><div class="lbl">Талисманов</div></div>
+    <div class="card"><div class="num mythseal">{{ overall.mythSeal }}</div><div class="lbl">Печатей</div></div>
+    <div class="card"><div class="num spl">{{ overall.splinters }}</div><div class="lbl">Осколков</div></div>
+    <div class="card"><div class="num rate">{{ overall.myth_rate }}%</div><div class="lbl">Шанс мифика</div></div>
+    <div class="card"><div class="num rate">{{ overall.seal_rate }}%</div><div class="lbl">Шанс печати</div></div>
+  </div>
+
+  <h2>По боссам <span class="muted">(нажмите на босса — разбивка по Torment)</span></h2>
+  <table>
+    <tr>
+      <th>Босс</th><th>Забеги</th><th>Мифики</th><th>Талисманы</th><th>Печати</th>
+      <th>Осколки</th><th>Шанс мифика</th><th>Шанс печати</th><th>Оск./забег</th>
+    </tr>
+    {% for b in boss_rows %}
+    <tr>
+      <td><a href="?season={{ sel_season }}&boss={{ b.name|urlencode }}">{{ b.name }}</a></td>
+      <td>{{ b.totals.runs }}</td>
+      <td class="myth">{{ b.totals.myth }}</td>
+      <td class="mythtal">{{ b.totals.mythTal }}</td>
+      <td class="mythseal">{{ b.totals.mythSeal }}</td>
+      <td class="spl">{{ b.totals.splinters }}</td>
+      <td class="rate">{{ b.totals.myth_rate }}%</td>
+      <td class="rate">{{ b.totals.seal_rate }}%</td>
+      <td class="rate">{{ b.totals.spl_per_run }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="9">Нет данных в этом сезоне.</td></tr>
+    {% endfor %}
+  </table>
+
+  {% if torment_rows %}
+  <h2>{{ sel_boss }} · по уровням Torment</h2>
+  <table>
+    <tr>
+      <th>Torment</th><th>Забеги</th><th>Мифики</th><th>Талисманы</th><th>Печати</th>
+      <th>Осколки Баала</th><th>Осколки Мефисто</th><th>Осколки Диабло</th>
+      <th>Шанс мифика</th><th>Оск./забег</th>
+    </tr>
+    {% for r in torment_rows %}
+    <tr>
+      <td>{{ r.label }}</td>
+      <td>{{ r.totals.runs }}</td>
+      <td class="myth">{{ r.totals.myth }}</td>
+      <td class="mythtal">{{ r.totals.mythTal }}</td>
+      <td class="mythseal">{{ r.totals.mythSeal }}</td>
+      <td class="spl">{{ r.totals.splBaal }}</td>
+      <td class="spl">{{ r.totals.splMeph }}</td>
+      <td class="spl">{{ r.totals.splDiablo }}</td>
+      <td class="rate">{{ r.totals.myth_rate }}%</td>
+      <td class="rate">{{ r.totals.spl_per_run }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</body>
+</html>
