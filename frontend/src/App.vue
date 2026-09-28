@@ -265,6 +265,12 @@ function parseTgAuthResult() {
   if (tgResult) {
     history.replaceState({}, "", location.pathname);
     await window.onTelegramAuth(tgResult);
+    if (user.value) {
+      // сессия установлена — перезагружаемся в чистое состояние,
+      // чтобы приложение открылось залогиненным без ручного reload
+      location.reload();
+      return;
+    }
   }
 
   // 2) иначе проверяем существующую сессию
