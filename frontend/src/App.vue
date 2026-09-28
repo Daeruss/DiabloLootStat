@@ -45,6 +45,10 @@ const rateTal = computed(() => {
   const s = curStat.value;
   return s.runs > 0 ? ((s.mythTal / s.runs) * 100).toFixed(1) + "%" : "—";
 });
+const rateSeal = computed(() => {
+  const s = curStat.value;
+  return s.runs > 0 ? ((s.mythSeal / s.runs) * 100).toFixed(1) + "%" : "—";
+});
 const rateDetail = computed(() => {
   const s = curStat.value;
   if (s.runs <= 0) return "";
@@ -60,6 +64,7 @@ const mainCounters = [
   { type: "runs", title: "Забеги на босса", cls: "", hint: "Нажимай «+» после каждого убийства" },
   { type: "myth", title: "Выпало мификов", cls: "myth", hint: "Мифическое (Uber Unique) обмундирование" },
   { type: "mythTal", title: "Мифические талисманы", cls: "mythtal", hint: "Мифические талисманы" },
+  { type: "mythSeal", title: "Мифические печати", cls: "mythseal", hint: "Мифические печати" },
 ];
 const splinterCounters = [
   { type: "splBaal", title: "Осколки Баала", cls: "baal" },
@@ -348,9 +353,11 @@ function parseTgAuthResult() {
         <div class="stat runs"><div class="num">{{ curStat.runs }}</div><div class="lbl">Забегов</div></div>
         <div class="stat myth"><div class="num">{{ curStat.myth }}</div><div class="lbl">Мификов выпало</div></div>
         <div class="stat mythtal"><div class="num">{{ curStat.mythTal }}</div><div class="lbl">Талисманов выпало</div></div>
+        <div class="stat mythseal"><div class="num">{{ curStat.mythSeal }}</div><div class="lbl">Печатей выпало</div></div>
         <div class="stat splinter"><div class="num">{{ totalSpl }}</div><div class="lbl">Осколков всего</div></div>
         <div class="stat rate"><div class="num">{{ rate }}</div><div class="lbl">Шанс мифика за забег</div></div>
         <div class="stat rate"><div class="num">{{ rateTal }}</div><div class="lbl">Шанс талисмана за забег</div></div>
+        <div class="stat rate"><div class="num">{{ rateSeal }}</div><div class="lbl">Шанс печати за забег</div></div>
       </div>
 
       <div class="counters">

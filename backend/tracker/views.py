@@ -126,7 +126,16 @@ class LogoutView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-SUM_KEYS = ["runs", "myth", "mythTal", "splBaal", "splMeph", "splDiablo", "splinters"]
+SUM_KEYS = [
+    "runs",
+    "myth",
+    "mythTal",
+    "mythSeal",
+    "splBaal",
+    "splMeph",
+    "splDiablo",
+    "splinters",
+]
 
 
 def _player_name(user):

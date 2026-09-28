@@ -25,6 +25,7 @@
     tr:nth-child(even) td { background: #1b160f; }
     .myth { color: #d97f2b; }
     .mythtal { color: #d94fb0; }
+    .mythseal { color: #9b6dff; }
     .spl { color: #7fa8d9; }
     .rate { color: #6fae6f; }
   </style>
@@ -55,6 +56,7 @@
         <option value="runs"{% if sel_sort == "runs" %} selected{% endif %}>Забегам</option>
         <option value="myth"{% if sel_sort == "myth" %} selected{% endif %}>Мификам</option>
         <option value="mythTal"{% if sel_sort == "mythTal" %} selected{% endif %}>Талисманам</option>
+        <option value="mythSeal"{% if sel_sort == "mythSeal" %} selected{% endif %}>Печатям</option>
         <option value="splinters"{% if sel_sort == "splinters" %} selected{% endif %}>Осколкам</option>
       </select>
     </label>
@@ -67,9 +69,11 @@
     <div class="card"><div class="num">{{ global_totals.runs }}</div><div class="lbl">Забегов</div></div>
     <div class="card"><div class="num myth">{{ global_totals.myth }}</div><div class="lbl">Мификов</div></div>
     <div class="card"><div class="num mythtal">{{ global_totals.mythTal }}</div><div class="lbl">Талисманов</div></div>
+    <div class="card"><div class="num mythseal">{{ global_totals.mythSeal }}</div><div class="lbl">Печатей</div></div>
     <div class="card"><div class="num spl">{{ global_totals.splinters }}</div><div class="lbl">Осколков</div></div>
     <div class="card"><div class="num rate">{{ global_totals.myth_rate }}%</div><div class="lbl">Шанс мифика</div></div>
     <div class="card"><div class="num rate">{{ global_totals.tal_rate }}%</div><div class="lbl">Шанс талисмана</div></div>
+    <div class="card"><div class="num rate">{{ global_totals.seal_rate }}%</div><div class="lbl">Шанс печати</div></div>
     <div class="card"><div class="num rate">{{ global_totals.spl_per_run }}</div><div class="lbl">Осколков / забег</div></div>
   </div>
 
@@ -77,7 +81,8 @@
   <table>
     <tr>
       <th>Игрок</th><th>Telegram ID</th><th>Забеги</th><th>Мифики</th><th>Талисманы</th>
-      <th>Осколки</th><th>Шанс мифика</th><th>Шанс тал.</th><th>Оск./забег</th><th>Обновлено</th>
+      <th>Печати</th><th>Осколки</th><th>Шанс мифика</th><th>Шанс тал.</th>
+      <th>Шанс печати</th><th>Оск./забег</th><th>Обновлено</th>
     </tr>
     {% for p in players %}
     <tr>
@@ -86,21 +91,23 @@
       <td>{{ p.totals.runs }}</td>
       <td class="myth">{{ p.totals.myth }}</td>
       <td class="mythtal">{{ p.totals.mythTal }}</td>
+      <td class="mythseal">{{ p.totals.mythSeal }}</td>
       <td class="spl">{{ p.totals.splinters }}</td>
       <td class="rate">{{ p.totals.myth_rate }}%</td>
       <td class="rate">{{ p.totals.tal_rate }}%</td>
+      <td class="rate">{{ p.totals.seal_rate }}%</td>
       <td class="rate">{{ p.totals.spl_per_run }}</td>
       <td>{{ p.updated_at|date:"Y-m-d H:i" }}</td>
     </tr>
     {% empty %}
-    <tr><td colspan="10">Нет данных под выбранным фильтром.</td></tr>
+    <tr><td colspan="12">Нет данных под выбранным фильтром.</td></tr>
     {% endfor %}
   </table>
 
   <h2>По боссам{% if sel_torment != "all" %} · Torment {{ sel_torment }}{% endif %}</h2>
   <table>
     <tr>
-      <th>Босс</th><th>Забеги</th><th>Мифики</th><th>Талисманы</th>
+      <th>Босс</th><th>Забеги</th><th>Мифики</th><th>Талисманы</th><th>Печати</th>
       <th>Осколки Баала</th><th>Осколки Мефисто</th><th>Осколки Диабло</th>
       <th>Шанс мифика</th><th>Оск./забег</th>
     </tr>
@@ -110,6 +117,7 @@
       <td>{{ b.totals.runs }}</td>
       <td class="myth">{{ b.totals.myth }}</td>
       <td class="mythtal">{{ b.totals.mythTal }}</td>
+      <td class="mythseal">{{ b.totals.mythSeal }}</td>
       <td class="spl">{{ b.totals.splBaal }}</td>
       <td class="spl">{{ b.totals.splMeph }}</td>
       <td class="spl">{{ b.totals.splDiablo }}</td>
@@ -117,7 +125,7 @@
       <td class="rate">{{ b.totals.spl_per_run }}</td>
     </tr>
     {% empty %}
-    <tr><td colspan="9">Нет данных под выбранным фильтром.</td></tr>
+    <tr><td colspan="10">Нет данных под выбранным фильтром.</td></tr>
     {% endfor %}
   </table>
 </body>

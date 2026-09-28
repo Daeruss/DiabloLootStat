@@ -6,7 +6,7 @@
 }
 """
 
-FIELDS = ["runs", "myth", "mythTal", "splBaal", "splMeph", "splDiablo"]
+FIELDS = ["runs", "myth", "mythTal", "mythSeal", "splBaal", "splMeph", "splDiablo"]
 
 _ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"]
 TORMENT_KEYS = [str(i) for i in range(1, 13)]
@@ -102,5 +102,6 @@ def with_rates(totals):
     runs = t.get("runs", 0)
     t["myth_rate"] = round(t["myth"] / runs * 100, 1) if runs else 0
     t["tal_rate"] = round(t["mythTal"] / runs * 100, 1) if runs else 0
+    t["seal_rate"] = round(t["mythSeal"] / runs * 100, 1) if runs else 0
     t["spl_per_run"] = round(t["splinters"] / runs, 2) if runs else 0
     return t

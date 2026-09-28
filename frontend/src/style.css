@@ -11,6 +11,7 @@
   --muted: #9a8a70;
   --myth: #d97f2b;
   --mythtal: #d94fb0;
+  --mythseal: #9b6dff;
   --splinter: #7fa8d9;
   --baal: #6f9fd0;
   --meph: #b57fd9;
@@ -135,6 +136,7 @@ select {
 .stat.runs .num { color: var(--gold-bright); }
 .stat.myth .num { color: var(--myth); }
 .stat.mythtal .num { color: var(--mythtal); }
+.stat.mythseal .num { color: var(--mythseal); }
 .stat.rate .num { color: #6fae6f; }
 .stat.splinter .num { color: var(--splinter); }
 
@@ -172,6 +174,7 @@ select {
 .ctrl .val { font-size: 40px; font-weight: 700; min-width: 60px; color: var(--gold-bright); }
 .counter-card.myth .ctrl .val { color: var(--myth); }
 .counter-card.mythtal .ctrl .val { color: var(--mythtal); }
+.counter-card.mythseal .ctrl .val { color: var(--mythseal); }
 .hint { color: var(--muted); font-size: 11px; margin-top: 10px; }
 
 .section-title { color: var(--gold); font-size: 14px; text-align: center; letter-spacing: 0.5px; margin: 4px 0 12px; }

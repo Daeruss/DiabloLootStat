@@ -17,6 +17,7 @@ class UserStateAdmin(admin.ModelAdmin):
         "runs",
         "myth",
         "myth_talismans",
+        "myth_seals",
         "splinters",
         "updated_at",
     )
@@ -40,6 +41,10 @@ class UserStateAdmin(admin.ModelAdmin):
     @admin.display(description="Талисманы")
     def myth_talismans(self, obj):
         return totals_for_state(obj.data)["mythTal"]
+
+    @admin.display(description="Печати")
+    def myth_seals(self, obj):
+        return totals_for_state(obj.data)["mythSeal"]
 
     @admin.display(description="Осколки")
     def splinters(self, obj):

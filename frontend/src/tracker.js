@@ -16,6 +16,7 @@ export const NUM_FIELDS = [
   "runs",
   "myth",
   "mythTal",
+  "mythSeal",
   "splBaal",
   "splMeph",
   "splDiablo",
@@ -31,7 +32,15 @@ export const TORMENT_KEYS = TORMENTS.map((t) => t[0]);
 export const DEFAULT_TORMENT = "12";
 
 export function newStat() {
-  return { runs: 0, myth: 0, mythTal: 0, splBaal: 0, splMeph: 0, splDiablo: 0 };
+  return {
+    runs: 0,
+    myth: 0,
+    mythTal: 0,
+    mythSeal: 0,
+    splBaal: 0,
+    splMeph: 0,
+    splDiablo: 0,
+  };
 }
 
 export function newBoss() {
