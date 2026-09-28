@@ -396,9 +396,13 @@ function parseTgAuthResult() {
         >
           <h3><span class="cicon" v-html="ICONS[c.type]"></span>{{ c.title }}</h3>
           <div class="ctrl">
-            <button class="big-btn minus" @click="inc(c.type, -1)">−</button>
+            <button class="big-btn minus" @click="inc(c.type, -1)" aria-label="минус">
+              <svg class="pm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12h13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+            </button>
             <span class="val">{{ curStat[c.type] }}</span>
-            <button class="big-btn plus" @click="inc(c.type, 1)">+</button>
+            <button class="big-btn plus" @click="inc(c.type, 1)" aria-label="плюс">
+              <svg class="pm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+            </button>
           </div>
           <div class="hint">{{ c.hint }}</div>
         </div>
@@ -414,9 +418,13 @@ function parseTgAuthResult() {
         >
           <h3><span class="cicon" v-html="ICONS[c.type]"></span>{{ c.title }}</h3>
           <div class="ctrl">
-            <button class="big-btn minus" @click="inc(c.type, -1)">−</button>
+            <button class="big-btn minus" @click="inc(c.type, -1)" aria-label="минус">
+              <svg class="pm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12h13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+            </button>
             <span class="val">{{ curStat[c.type] }}</span>
-            <button class="big-btn plus" @click="inc(c.type, 1)">+</button>
+            <button class="big-btn plus" @click="inc(c.type, 1)" aria-label="плюс">
+              <svg class="pm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+            </button>
           </div>
         </div>
       </div>

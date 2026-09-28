@@ -172,6 +172,8 @@ select {
   color: var(--muted);
   background: var(--panel-2);
 }
+.big-btn .pm { width: 24px; height: 24px; display: block; }
+.splinters .big-btn .pm { width: 20px; height: 20px; }
 .big-btn.plus { background: linear-gradient(var(--red), #6e1c15); color: #fff; }
 .big-btn.plus:hover { background: linear-gradient(var(--red-bright), var(--red)); }
 .big-btn.minus:hover { color: var(--text); border-color: var(--gold); }
