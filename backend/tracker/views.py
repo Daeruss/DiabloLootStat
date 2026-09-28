@@ -2,6 +2,7 @@ import logging
 from urllib.parse import quote
 
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
@@ -13,12 +14,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import TelegramProfile, UserState
+from .models import Boss, TelegramProfile, UserState
 from .stats import (
     TORMENT_KEYS,
     TORMENT_OPTIONS,
     collect_boss_names,
     is_empty,
+    merge_boss_into,
     per_boss_filtered,
     totals_filtered,
     with_rates,
@@ -74,10 +76,14 @@ class ConfigView(APIView):
     def get(self, request):
         token = (settings.TELEGRAM_BOT_TOKEN or "").strip()
         bot_id = token.split(":")[0] if ":" in token else ""
+        bosses = list(
+            Boss.objects.filter(enabled=True).values_list("name", flat=True)
+        )
         return Response(
             {
                 "bot_username": (settings.TELEGRAM_BOT_USERNAME or "").strip().lstrip("@"),
                 "bot_id": bot_id,
+                "bosses": bosses,
             }
         )
 
@@ -209,6 +215,47 @@ def admin_stats(request):
         "sel_sort": sort,
     }
     return render(request, "tracker/admin_stats.html", context)
+
+
+@staff_member_required
+def merge_bosses(request):
+    """Объединение статистики: переносит всё с босса-источника на босса-приёмник
+    во всех аккаунтах (в JSON каждого пользователя)."""
+    bosses = list(Boss.objects.all())
+
+    if request.method == "POST":
+        src = (request.POST.get("source") or "").strip()
+        dst = (request.POST.get("target") or "").strip()
+        delete_source = request.POST.get("delete_source") == "on"
+
+        if not src or not dst or src == dst:
+            messages.error(request, "Выберите двух разных боссов.")
+            return redirect("merge-bosses")
+
+        affected = 0
+        for st in UserState.objects.all():
+            data = st.data or {}
+            bosses_data = data.get("bosses") or {}
+            if merge_boss_into(bosses_data, src, dst):
+                del bosses_data[src]
+                if data.get("current") == src:
+                    data["current"] = dst
+                data["bosses"] = bosses_data
+                st.data = data
+                st.save(update_fields=["data", "updated_at"])
+                affected += 1
+
+        if delete_source:
+            Boss.objects.filter(name=src).delete()
+
+        messages.success(
+            request,
+            f"Готово: «{src}» → «{dst}». Обновлено аккаунтов: {affected}."
+            + (" Босс-источник удалён из каталога." if delete_source else ""),
+        )
+        return redirect("merge-bosses")
+
+    return render(request, "tracker/merge_bosses.html", {"bosses": bosses})
 
 
 @method_decorator(ensure_csrf_cookie, name="get")

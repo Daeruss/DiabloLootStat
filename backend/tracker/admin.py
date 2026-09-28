@@ -1,7 +1,14 @@
 from django.contrib import admin
 
-from .models import TelegramProfile, UserState
+from .models import Boss, TelegramProfile, UserState
 from .stats import totals_for_state
+
+
+@admin.register(Boss)
+class BossAdmin(admin.ModelAdmin):
+    list_display = ("name", "order", "enabled")
+    list_editable = ("order", "enabled")
+    search_fields = ("name",)
 
 
 @admin.register(TelegramProfile)

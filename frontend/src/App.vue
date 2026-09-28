@@ -17,16 +17,18 @@ const user = ref(null); // профиль Telegram или null
 const ready = ref(false); // завершилась ли первичная проверка авторизации
 const botId = ref("");
 const saveStatus = ref("");
-const newBossName = ref("");
 const importInput = ref(null);
 const signingIn = ref(false);
 const loginError = ref("");
+// глобальный каталог боссов с сервера (общий для всех, редактируется в админке)
+const catalogBosses = ref([]);
 
 const state = reactive({ bosses: {}, current: "", torment: DEFAULT_TORMENT });
 let loaded = false; // защита от сохранения во время начальной загрузки
 
 // ── Производные данные ──
-const bossNames = computed(() => Object.keys(state.bosses));
+// список для выпадающего меню берём из каталога БД, а не из ключей статистики
+const bossNames = computed(() => catalogBosses.value);
 
 const curStat = computed(() => {
   const boss = state.bosses[state.current];
@@ -85,26 +87,14 @@ function selectTorment(key) {
   state.torment = key;
 }
 
-function addBoss() {
-  const name = newBossName.value.trim();
-  if (!name) return;
-  if (state.bosses[name]) {
-    alert("Такой босс уже есть");
-    return;
+// подмешиваем боссов из каталога: добавляем недостающих, чиним выбранного
+function ensureCatalog() {
+  catalogBosses.value.forEach((name) => {
+    if (!state.bosses[name]) state.bosses[name] = newBoss();
+  });
+  if (!catalogBosses.value.includes(state.current)) {
+    state.current = catalogBosses.value[0] || state.current;
   }
-  state.bosses[name] = newBoss();
-  state.current = name;
-  newBossName.value = "";
-}
-
-function deleteBoss() {
-  if (bossNames.value.length <= 1) {
-    alert("Нельзя удалить последнего босса");
-    return;
-  }
-  if (!confirm(`Удалить босса «${state.current}» вместе со статистикой?`)) return;
-  delete state.bosses[state.current];
-  state.current = Object.keys(state.bosses)[0];
 }
 
 function resetCurrent() {
@@ -163,6 +153,7 @@ async function loadState() {
   const empty = !res.data || !res.data.bosses;
   const st = normState(res.data);
   applyState(st);
+  ensureCatalog(); // добавить боссов из каталога БД
   if (empty) {
     // первый вход — сразу сохраняем состояние по умолчанию
     await saveNow();
@@ -256,6 +247,9 @@ function parseTgAuthResult() {
   try {
     const cfg = await api("/config/");
     botId.value = cfg.bot_id || "";
+    if (Array.isArray(cfg.bosses) && cfg.bosses.length) {
+      catalogBosses.value = cfg.bosses;
+    }
   } catch (e) {
     /* ignore */
   }
@@ -329,19 +323,6 @@ function parseTgAuthResult() {
         <select v-model="state.current">
           <option v-for="name in bossNames" :key="name" :value="name">{{ name }}</option>
         </select>
-        <button class="btn btn-del" title="Удалить выбранного босса" @click="deleteBoss">
-          ✕ удалить
-        </button>
-        <div class="new-boss">
-          <input
-            v-model="newBossName"
-            type="text"
-            placeholder="Новый босс…"
-            maxlength="30"
-            @keydown.enter="addBoss"
-          />
-          <button class="btn" @click="addBoss">+ добавить</button>
-        </div>
       </div>
 
       <div class="torment-tabs">

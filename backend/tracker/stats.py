@@ -96,6 +96,25 @@ def is_empty(totals):
     return all(totals.get(f, 0) == 0 for f in FIELDS)
 
 
+def merge_boss_into(bosses_data, src, dst):
+    """Прибавляет статистику босса src к боссу dst внутри одного data.bosses.
+    Возвращает True, если src был найден и что-то перенесено."""
+    if src not in bosses_data:
+        return False
+    s = bosses_data.get(src) or {}
+    d = bosses_data.setdefault(dst, {"t": {}})
+    d.setdefault("t", {})
+    for tk, stat in (s.get("t") or {}).items():
+        acc = d["t"].setdefault(tk, {f: 0 for f in FIELDS})
+        if not isinstance(stat, dict):
+            continue
+        for f in FIELDS:
+            v = stat.get(f)
+            if isinstance(v, (int, float)):
+                acc[f] = acc.get(f, 0) + v
+    return True
+
+
 def with_rates(totals):
     """Добавляет производные метрики: шанс мифика/талисмана и осколков за забег."""
     t = dict(totals)

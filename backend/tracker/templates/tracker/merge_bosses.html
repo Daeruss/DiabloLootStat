@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Объединение статистики боссов</title>
+  <style>
+    body { font-family: "Segoe UI", system-ui, sans-serif; background: #14100c; color: #e8ddc8; margin: 0; padding: 28px; }
+    h1 { color: #f0d9a8; margin: 0 0 6px; font-size: 22px; }
+    .muted { color: #9a8a70; font-size: 13px; }
+    a { color: #7fa8d9; }
+    form { background: #1f1912; border: 1px solid #43331f; border-radius: 10px; padding: 20px; margin-top: 16px; max-width: 560px; }
+    label { display: block; margin: 12px 0 5px; color: #c8aa6e; font-size: 13px; }
+    select { width: 100%; background: #2a2118; color: #e8ddc8; border: 1px solid #43331f; border-radius: 6px; padding: 9px 12px; font-size: 14px; }
+    .chk { margin-top: 14px; font-size: 14px; color: #e8ddc8; }
+    button { margin-top: 18px; background: linear-gradient(#a12c22, #6e1c15); color: #fff; border: none; border-radius: 6px; padding: 10px 20px; font-size: 15px; cursor: pointer; }
+    .note { color: #9a8a70; font-size: 12px; margin-top: 14px; line-height: 1.5; }
+    .msg { padding: 10px 14px; border-radius: 8px; margin-top: 14px; max-width: 560px; }
+    .msg.success { background: #1c3a1c; border: 1px solid #2f6f2f; color: #bfe6bf; }
+    .msg.error { background: #3a1c1c; border: 1px solid #7a2f2f; color: #e6bfbf; }
+  </style>
+</head>
+<body>
+  <h1>🔀 Объединение статистики боссов</h1>
+  <p class="muted"><a href="/admin/">← в админку</a> · <a href="/admin/stats/">сводная статистика</a> · <a href="/admin/tracker/boss/">каталог боссов</a></p>
+
+  {% if messages %}
+    {% for m in messages %}
+      <div class="msg {{ m.tags }}">{{ m }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <label for="source">Босс-источник (откуда переносим и удаляем из данных)</label>
+    <select name="source" id="source">
+      {% for b in bosses %}<option value="{{ b.name }}">{{ b.name }}</option>{% endfor %}
+    </select>
+
+    <label for="target">Босс-приёмник (куда прибавляем)</label>
+    <select name="target" id="target">
+      {% for b in bosses %}<option value="{{ b.name }}">{{ b.name }}</option>{% endfor %}
+    </select>
+
+    <div class="chk">
+      <label style="display:inline; color:#e8ddc8;">
+        <input type="checkbox" name="delete_source"> удалить босса-источник из каталога после объединения
+      </label>
+    </div>
+
+    <button type="submit">Объединить у всех аккаунтов</button>
+
+    <p class="note">
+      Статистика источника прибавляется к приёмнику по каждому уровню Torment во всех
+      аккаунтах, затем запись источника удаляется из данных игроков. Действие
+      необратимо — при необходимости сделайте резервную копию БД.
+    </p>
+  </form>
+</body>
+</html>

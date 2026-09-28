@@ -22,6 +22,22 @@ class TelegramProfile(models.Model):
         return f"{self.first_name or self.username or self.telegram_id} ({self.telegram_id})"
 
 
+class Boss(models.Model):
+    """Глобальный каталог боссов (общий для всех). Редактируется в админке."""
+
+    name = models.CharField("Имя", max_length=60, unique=True)
+    order = models.PositiveIntegerField("Порядок", default=100)
+    enabled = models.BooleanField("Показывать", default=True)
+
+    class Meta:
+        ordering = ["order", "name"]
+        verbose_name = "Босс"
+        verbose_name_plural = "Боссы"
+
+    def __str__(self):
+        return self.name
+
+
 class UserState(models.Model):
     """Вся статистика пользователя одним JSON-документом (боссы × Torment)."""
 
