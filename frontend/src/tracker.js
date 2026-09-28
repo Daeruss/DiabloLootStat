@@ -80,19 +80,39 @@ export function normBoss(b) {
   return b;
 }
 
-export function defaultState() {
-  const bosses = {};
-  DEFAULT_BOSSES.forEach((b) => (bosses[b] = newBoss()));
-  return { bosses, current: DEFAULT_BOSSES[0], torment: DEFAULT_TORMENT };
+export function newSeason() {
+  return { bosses: {} };
 }
 
-// нормализуем произвольный объект состояния (из БД / из файла импорта)
-export function normState(raw) {
-  let st = raw && typeof raw === "object" && raw.bosses ? raw : defaultState();
-  Object.keys(st.bosses).forEach((name) => {
-    st.bosses[name] = normBoss(st.bosses[name]);
+export function defaultState() {
+  return { seasons: {}, current: "", torment: DEFAULT_TORMENT };
+}
+
+// нормализуем произвольный объект состояния (из БД / из файла импорта).
+// currentSeason нужен, чтобы старую «плоскую» статистику положить в текущий сезон.
+export function normState(raw, currentSeason) {
+  const src = raw && typeof raw === "object" ? raw : {};
+  let seasons = src.seasons;
+  if (!seasons || typeof seasons !== "object") {
+    seasons = {};
+    if (src.bosses && typeof src.bosses === "object") {
+      seasons[String(currentSeason)] = { bosses: src.bosses };
+    }
+  }
+
+  const outSeasons = {};
+  Object.keys(seasons).forEach((sk) => {
+    const b = (seasons[sk] && seasons[sk].bosses) || {};
+    const nb = {};
+    Object.keys(b).forEach((name) => {
+      nb[name] = normBoss(b[name]);
+    });
+    outSeasons[sk] = { bosses: nb };
   });
-  if (!TORMENT_KEYS.includes(st.torment)) st.torment = DEFAULT_TORMENT;
-  if (!st.bosses[st.current]) st.current = Object.keys(st.bosses)[0];
-  return st;
+
+  return {
+    seasons: outSeasons,
+    current: typeof src.current === "string" ? src.current : "",
+    torment: TORMENT_KEYS.includes(src.torment) ? src.torment : DEFAULT_TORMENT,
+  };
 }

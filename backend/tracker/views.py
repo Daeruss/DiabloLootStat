@@ -14,17 +14,28 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Boss, TelegramProfile, UserState
+from .models import Boss, Season, TelegramProfile, UserState
 from .stats import (
     TORMENT_KEYS,
     TORMENT_OPTIONS,
+    all_season_keys,
     collect_boss_names,
+    get_bosses,
     is_empty,
     merge_boss_into,
     per_boss_filtered,
     totals_filtered,
     with_rates,
 )
+
+
+def current_season_number():
+    """Номер текущего сезона (или самый большой, или 15 по умолчанию)."""
+    s = Season.objects.filter(is_current=True).values_list("number", flat=True).first()
+    if s is not None:
+        return s
+    s = Season.objects.order_by("-number").values_list("number", flat=True).first()
+    return s if s is not None else 15
 from .telegram_auth import verify_telegram_auth
 
 logger = logging.getLogger("tracker.auth")
@@ -79,11 +90,14 @@ class ConfigView(APIView):
         bosses = list(
             Boss.objects.filter(enabled=True).values_list("name", flat=True)
         )
+        seasons = list(Season.objects.values_list("number", flat=True))
         return Response(
             {
                 "bot_username": (settings.TELEGRAM_BOT_USERNAME or "").strip().lstrip("@"),
                 "bot_id": bot_id,
                 "bosses": bosses,
+                "season": current_season_number(),
+                "seasons": seasons,
             }
         )
 
@@ -158,7 +172,16 @@ def admin_stats(request):
         UserState.objects.select_related("user", "user__telegram").order_by("-updated_at")
     )
 
-    all_bosses = collect_boss_names(states)
+    all_seasons = list(Season.objects.values_list("number", flat=True))
+    # выбранный сезон (по умолчанию текущий)
+    try:
+        season = int(request.GET.get("season", current_season_number()))
+    except (TypeError, ValueError):
+        season = current_season_number()
+    if all_seasons and season not in all_seasons:
+        season = current_season_number()
+
+    all_bosses = collect_boss_names(states, season)
 
     # фильтры из query-строки
     torment = request.GET.get("torment", "all")
@@ -174,7 +197,8 @@ def admin_stats(request):
     boss_totals = {}
 
     for st in states:
-        t = totals_filtered(st.data, t_filter, b_filter)
+        bosses_data = get_bosses(st.data, season)
+        t = totals_filtered(bosses_data, t_filter, b_filter)
         for key in SUM_KEYS:
             global_totals[key] += t[key]
         if not is_empty(t):
@@ -188,7 +212,7 @@ def admin_stats(request):
                     "updated_at": st.updated_at,
                 }
             )
-        for name, agg in per_boss_filtered(st.data, t_filter).items():
+        for name, agg in per_boss_filtered(bosses_data, t_filter).items():
             if b_filter and name != b_filter:
                 continue
             acc = boss_totals.setdefault(name, {k: 0 for k in SUM_KEYS})
@@ -210,6 +234,8 @@ def admin_stats(request):
         "bosses": bosses,
         "torment_options": TORMENT_OPTIONS,
         "boss_options": all_bosses,
+        "season_options": all_seasons,
+        "sel_season": season,
         "sel_torment": torment,
         "sel_boss": boss if b_filter else "all",
         "sel_sort": sort,
@@ -235,12 +261,26 @@ def merge_bosses(request):
         affected = 0
         for st in UserState.objects.all():
             data = st.data or {}
-            bosses_data = data.get("bosses") or {}
-            if merge_boss_into(bosses_data, src, dst):
-                del bosses_data[src]
+            seasons = data.get("seasons")
+            changed = False
+            # объединяем во всех сезонах игрока
+            if isinstance(seasons, dict):
+                for skey, sdata in seasons.items():
+                    bosses_data = (sdata or {}).get("bosses") or {}
+                    if merge_boss_into(bosses_data, src, dst):
+                        del bosses_data[src]
+                        sdata["bosses"] = bosses_data
+                        changed = True
+            else:
+                # legacy плоская структура (на случай, если не мигрировано)
+                bosses_data = data.get("bosses") or {}
+                if merge_boss_into(bosses_data, src, dst):
+                    del bosses_data[src]
+                    data["bosses"] = bosses_data
+                    changed = True
+            if changed:
                 if data.get("current") == src:
                     data["current"] = dst
-                data["bosses"] = bosses_data
                 st.data = data
                 st.save(update_fields=["data", "updated_at"])
                 affected += 1

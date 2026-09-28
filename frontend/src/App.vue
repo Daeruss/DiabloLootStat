@@ -8,6 +8,7 @@ import {
   DEFAULT_TORMENT,
   newStat,
   newBoss,
+  newSeason,
   normState,
   defaultState,
 } from "./tracker";
@@ -22,16 +23,28 @@ const signingIn = ref(false);
 const loginError = ref("");
 // глобальный каталог боссов с сервера (общий для всех, редактируется в админке)
 const catalogBosses = ref([]);
+// сезоны из БД: текущий, список всех, выбранный для просмотра
+const currentSeason = ref(15);
+const seasons = ref([]);
+const selectedSeason = ref(15);
 
-const state = reactive({ bosses: {}, current: "", torment: DEFAULT_TORMENT });
+// state.seasons[<номер>] = { bosses: { имя: {t:{...}} } }
+const state = reactive({ seasons: {}, current: "", torment: DEFAULT_TORMENT });
 let loaded = false; // защита от сохранения во время начальной загрузки
 
 // ── Производные данные ──
 // список для выпадающего меню берём из каталога БД, а не из ключей статистики
 const bossNames = computed(() => catalogBosses.value);
 
+// боссы выбранного сезона
+function seasonBosses() {
+  const sb = state.seasons[String(selectedSeason.value)];
+  return sb ? sb.bosses : null;
+}
+
 const curStat = computed(() => {
-  const boss = state.bosses[state.current];
+  const bosses = state.seasons[String(selectedSeason.value)]?.bosses;
+  const boss = bosses && bosses[state.current];
   if (!boss) return newStat();
   return boss.t[state.torment];
 });
@@ -77,7 +90,8 @@ const splinterCounters = [
 
 // ── Мутации ──
 function inc(type, delta) {
-  const boss = state.bosses[state.current];
+  const bosses = seasonBosses();
+  const boss = bosses && bosses[state.current];
   if (!boss) return;
   const s = boss.t[state.torment];
   s[type] = Math.max(0, s[type] + delta);
@@ -87,10 +101,13 @@ function selectTorment(key) {
   state.torment = key;
 }
 
-// подмешиваем боссов из каталога: добавляем недостающих, чиним выбранного
+// создаёт данные выбранного сезона и подмешивает боссов каталога
 function ensureCatalog() {
+  const sk = String(selectedSeason.value);
+  if (!state.seasons[sk]) state.seasons[sk] = newSeason();
+  const bosses = state.seasons[sk].bosses;
   catalogBosses.value.forEach((name) => {
-    if (!state.bosses[name]) state.bosses[name] = newBoss();
+    if (!bosses[name]) bosses[name] = newBoss();
   });
   if (!catalogBosses.value.includes(state.current)) {
     state.current = catalogBosses.value[0] || state.current;
@@ -99,9 +116,15 @@ function ensureCatalog() {
 
 function resetCurrent() {
   const label = TORMENTS.find((t) => t[0] === state.torment)[1];
-  if (!confirm(`Сбросить счётчики для «${state.current}» на ${label}?`)) return;
-  state.bosses[state.current].t[state.torment] = newStat();
+  if (!confirm(`Сбросить счётчики для «${state.current}» на ${label} (Сезон ${selectedSeason.value})?`)) return;
+  const bosses = seasonBosses();
+  if (bosses && bosses[state.current]) {
+    bosses[state.current].t[state.torment] = newStat();
+  }
 }
+
+// при переключении сезона убеждаемся, что его данные есть
+watch(selectedSeason, () => ensureCatalog());
 
 // ── Экспорт / импорт (резервные копии в файл) ──
 function exportData() {
@@ -142,7 +165,7 @@ function onImportFile(e) {
 // ── Синхронизация с сервером ──
 function applyState(st) {
   loaded = false;
-  state.bosses = st.bosses;
+  state.seasons = st.seasons;
   state.current = st.current;
   state.torment = st.torment;
   nextTick(() => (loaded = true));
@@ -150,10 +173,11 @@ function applyState(st) {
 
 async function loadState() {
   const res = await api("/state/");
-  const empty = !res.data || !res.data.bosses;
-  const st = normState(res.data);
+  const d = res.data || {};
+  const empty = !d.seasons && !d.bosses;
+  const st = normState(d, currentSeason.value);
   applyState(st);
-  ensureCatalog(); // добавить боссов из каталога БД
+  ensureCatalog(); // создать текущий сезон и подмешать боссов каталога
   if (empty) {
     // первый вход — сразу сохраняем состояние по умолчанию
     await saveNow();
@@ -250,6 +274,15 @@ function parseTgAuthResult() {
     if (Array.isArray(cfg.bosses) && cfg.bosses.length) {
       catalogBosses.value = cfg.bosses;
     }
+    if (cfg.season) {
+      currentSeason.value = cfg.season;
+      selectedSeason.value = cfg.season;
+    }
+    if (Array.isArray(cfg.seasons) && cfg.seasons.length) {
+      seasons.value = cfg.seasons;
+    } else {
+      seasons.value = [currentSeason.value];
+    }
   } catch (e) {
     /* ignore */
   }
@@ -320,7 +353,12 @@ function parseTgAuthResult() {
       </p>
 
       <div class="boss-select">
-        <select v-model="state.current">
+        <select v-model.number="selectedSeason" title="Сезон">
+          <option v-for="s in seasons" :key="s" :value="s">
+            Сезон {{ s }}{{ s === currentSeason ? " (текущий)" : "" }}
+          </option>
+        </select>
+        <select v-model="state.current" title="Босс">
           <option v-for="name in bossNames" :key="name" :value="name">{{ name }}</option>
         </select>
       </div>

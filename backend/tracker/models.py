@@ -22,6 +22,30 @@ class TelegramProfile(models.Model):
         return f"{self.first_name or self.username or self.telegram_id} ({self.telegram_id})"
 
 
+class Season(models.Model):
+    """Сезон Diablo 4. Статистика ведётся отдельно по каждому сезону."""
+
+    number = models.PositiveIntegerField("Номер", unique=True)
+    title = models.CharField("Название", max_length=80, blank=True, default="")
+    is_current = models.BooleanField("Текущий", default=False)
+
+    class Meta:
+        ordering = ["-number"]
+        verbose_name = "Сезон"
+        verbose_name_plural = "Сезоны"
+
+    def __str__(self):
+        return self.title or f"Сезон {self.number}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # текущий сезон может быть только один
+        if self.is_current:
+            Season.objects.exclude(pk=self.pk).filter(is_current=True).update(
+                is_current=False
+            )
+
+
 class Boss(models.Model):
     """Глобальный каталог боссов (общий для всех). Редактируется в админке."""
 

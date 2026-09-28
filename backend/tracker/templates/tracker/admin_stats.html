@@ -35,6 +35,13 @@
   <p class="muted">Аккаунтов всего: {{ total_accounts }} · с данными под фильтром: {{ player_count }} · <a href="/admin/">← в админку</a> · <a href="/admin/merge-bosses/">🔀 объединить боссов</a></p>
 
   <form class="filters" method="get">
+    <label>Сезон
+      <select name="season">
+        {% for s in season_options %}
+        <option value="{{ s }}"{% if s == sel_season %} selected{% endif %}>Сезон {{ s }}</option>
+        {% endfor %}
+      </select>
+    </label>
     <label>Torment
       <select name="torment">
         <option value="all"{% if sel_torment == "all" %} selected{% endif %}>Все уровни</option>
@@ -64,7 +71,7 @@
     <a class="reset" href="/admin/stats/">сбросить</a>
   </form>
 
-  <h2>Итого{% if sel_boss != "all" %} · {{ sel_boss }}{% endif %}{% if sel_torment != "all" %} · Torment {{ sel_torment }}{% endif %}</h2>
+  <h2>Итого · Сезон {{ sel_season }}{% if sel_boss != "all" %} · {{ sel_boss }}{% endif %}{% if sel_torment != "all" %} · Torment {{ sel_torment }}{% endif %}</h2>
   <div class="cards">
     <div class="card"><div class="num">{{ global_totals.runs }}</div><div class="lbl">Забегов</div></div>
     <div class="card"><div class="num myth">{{ global_totals.myth }}</div><div class="lbl">Мификов</div></div>
